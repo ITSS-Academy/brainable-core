@@ -1,0 +1,19 @@
+# create postgres
+services:
+  postgres:
+    image: postgres:16.3
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "55000:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  db:
+    driver: local
+
