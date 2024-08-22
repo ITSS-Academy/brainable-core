@@ -28,13 +28,9 @@ import { CategoriesModule } from "./categories/categories.module";
     CategoriesModule
   ],
   controllers: [
-    AppController,
-    QuestionController,
-    GameController,
-    GameRecordController,
-    CategoriesController
+    AppController
   ],
-  providers: [AppService, GameService, GameRecordService, QuestionService, GameGateway, CategoriesService]
+  providers: [AppService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

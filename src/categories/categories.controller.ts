@@ -19,9 +19,8 @@ export class CategoriesController {
   }
 
   @Post()
-  async createCategory(@Req() req: any, @Body() categoryDto: CategoriesDTO) {
+  async createCategory(@Body() categoryDto: CategoriesDTO) {
     try {
-      let authData = req.user as DecodedIdToken;
       let category: CategoriesDTO = {
         categories: new Categories(
           categoryDto.categories.name,
