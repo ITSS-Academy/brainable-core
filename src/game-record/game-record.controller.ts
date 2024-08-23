@@ -3,15 +3,16 @@ import {
   Controller,
   HttpException,
   HttpStatus,
-  Post,
-} from '@nestjs/common';
-import { GameRecordService } from './game-record.service';
-import { GameRecordDTO } from '../models/gameRecord.dto';
-import { GameRecord } from '../../db/src/entity/GameRecord';
+  Post
+} from "@nestjs/common";
+import { GameRecordService } from "./game-record.service";
+import { GameRecordDTO } from "../models/gameRecord.dto";
+import { GameRecord } from "../../db/src/entity/GameRecord";
 
-@Controller('game-record')
+@Controller("game-record")
 export class GameRecordController {
-  constructor(private gameRecord: GameRecordService) {}
+  constructor(private gameRecord: GameRecordService) {
+  }
 
   @Post()
   async create(@Body() gameRecordDto: GameRecordDTO) {
@@ -21,9 +22,8 @@ export class GameRecordController {
           gameRecordDto.gameRecord.gameId,
           gameRecordDto.gameRecord.questionId,
           gameRecordDto.gameRecord.playerName,
-          gameRecordDto.gameRecord.responseTimeInMs,
-          gameRecordDto.gameRecord.answer,
-        ),
+          gameRecordDto.gameRecord.answer
+        )
       };
       await this.gameRecord.create(gameRecord);
     } catch (error) {

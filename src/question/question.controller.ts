@@ -32,8 +32,7 @@ export class QuestionController {
               question.option3,
               question.option4,
               question.imgUrl,
-              question.timeLimit,
-              question.quizId
+              question.timeLimit
             )
           };
         }

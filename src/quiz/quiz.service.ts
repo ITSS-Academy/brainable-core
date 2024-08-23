@@ -3,6 +3,7 @@ import { QuizDTO } from "../models/quiz.dto";
 import { AppDataSource } from "../../db/src/data-source";
 import { Quiz } from "../../db/src/entity/Quiz";
 import { Profile } from "../../db/src/entity/Profile";
+import { Question } from "../../db/src/entity/Question";
 
 @Injectable()
 export class QuizService {
@@ -13,8 +14,23 @@ export class QuizService {
     if (!author) {
       throw new Error("Author not found");
     }
-    quiz.quiz.authorId = author;
-    await AppDataSource.manager.save(quiz.quiz);
+    const newQuiz = await AppDataSource.manager.save(Quiz, {
+      ...quiz.quiz,
+      authorId: author,
+      questions: []
+    });
+
+    const questions = quiz.quiz.questions.map(async question => {
+      return await AppDataSource.manager.save(Question, {
+        ...question,
+        quizId: newQuiz
+      });
+    });
+
+    await Promise.all(questions);
+
+
+    return newQuiz;
   }
 
   async getByAuthorId(id: string) {

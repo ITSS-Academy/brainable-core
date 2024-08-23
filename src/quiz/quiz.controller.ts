@@ -31,7 +31,8 @@ export class QuizController {
           quizDto.quiz.description,
           quizDto.quiz.isPublic,
           quizDto.quiz.category,
-          quizDto.quiz.imgUrl
+          quizDto.quiz.imgUrl,
+          quizDto.quiz.questions
         )
       };
 
@@ -71,7 +72,8 @@ export class QuizController {
           quizDTO.quiz.description,
           quizDTO.quiz.isPublic,
           quizDTO.quiz.category,
-          quizDTO.quiz.imgUrl
+          quizDTO.quiz.imgUrl,
+          quizDTO.quiz.questions
         )
       };
 
