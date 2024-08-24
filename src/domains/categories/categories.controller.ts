@@ -1,8 +1,8 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Req } from "@nestjs/common";
 import { CategoriesService } from "./categories.service";
-import { CategoriesDTO } from "../models/categories.dto";
+import { CategoriesDTO } from "../../models/categories.dto";
 import { DecodedIdToken } from "firebase-admin/lib/auth";
-import { Categories } from "../../db/src/entity/Categories";
+import { Categories } from "../../../db/src/entity/Categories";
 
 @Controller("categories")
 export class CategoriesController {

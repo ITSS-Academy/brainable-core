@@ -9,9 +9,9 @@ import {
   Req
 } from "@nestjs/common";
 import { ProfileService } from "./profile.service";
-import { ProfileDTO } from "../models/profile.dto";
+import { ProfileDTO } from "../../models/profile.dto";
 import { DecodedIdToken } from "firebase-admin/lib/auth";
-import { Profile } from "../../db/src/entity/Profile";
+import { Profile } from "../../../db/src/entity/Profile";
 
 @Controller("profile")
 export class ProfileController {

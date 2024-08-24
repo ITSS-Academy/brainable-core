@@ -9,8 +9,8 @@ import {
   Put
 } from "@nestjs/common";
 import { QuestionService } from "./question.service";
-import { QuestionDTO } from "../models/question.dto";
-import { Question } from "../../db/src/entity/Question";
+import { QuestionDTO } from "../../models/question.dto";
+import { Question } from "../../../db/src/entity/Question";
 
 @Controller("question")
 export class QuestionController {

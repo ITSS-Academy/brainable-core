@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { ProfileDTO } from "../models/profile.dto";
-import { AppDataSource } from "../../db/src/data-source";
-import { Profile } from "../../db/src/entity/Profile";
+import { ProfileDTO } from "../../models/profile.dto";
+import { AppDataSource } from "../../../db/src/data-source";
+import { Profile } from "../../../db/src/entity/Profile";
 
 @Injectable()
 export class ProfileService {

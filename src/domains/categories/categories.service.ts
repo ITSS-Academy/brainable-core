@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { CategoriesDTO } from "../models/categories.dto";
-import { Categories } from "../../db/src/entity/Categories";
-import { AppDataSource } from "../../db/src/data-source";
+import { CategoriesDTO } from "../../models/categories.dto";
+import { Categories } from "../../../db/src/entity/Categories";
+import { AppDataSource } from "../../../db/src/data-source";
 
 @Injectable()
 export class CategoriesService {
@@ -25,5 +25,5 @@ export class CategoriesService {
   async getAllCategories() {
     return await AppDataSource.manager.find(Categories);
   }
-  
+
 }

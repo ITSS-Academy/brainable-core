@@ -1,13 +1,14 @@
 import { Injectable } from "@nestjs/common";
-import { QuizDTO } from "../models/quiz.dto";
-import { AppDataSource } from "../../db/src/data-source";
-import { Quiz } from "../../db/src/entity/Quiz";
-import { Profile } from "../../db/src/entity/Profile";
-import { Question } from "../../db/src/entity/Question";
+import { CreateQuizDto } from "../../models/create-quiz.dto";
+import { AppDataSource } from "../../../db/src/data-source";
+import { Quiz } from "../../../db/src/entity/Quiz";
+import { Profile } from "../../../db/src/entity/Profile";
+import { Question } from "../../../db/src/entity/Question";
+import { UpdateQuizDto } from "../../models/update-quiz.dto";
 
 @Injectable()
 export class QuizService {
-  async create(quiz: QuizDTO, authorId: string) {
+  async create(quiz: CreateQuizDto, authorId: string) {
     let author = await AppDataSource.manager.findOne(Profile, {
       where: { uid: authorId }
     });
@@ -65,16 +66,41 @@ export class QuizService {
     return quiz;
   }
 
-  async update(quizDto: QuizDTO) {
-    let quiz = await AppDataSource.manager.findOne(Quiz, {
-      where: { id: quizDto.quiz.id }
+  async update(quiz: UpdateQuizDto) {
+    // console.log(quiz);
+    let quizToUpdate = await AppDataSource.manager.findOne(Quiz, {
+      where: { id: quiz.quiz.id }
     });
-    if (!quiz) {
+    if (!quizToUpdate) {
       throw new Error("Quiz not found");
     }
 
-    await AppDataSource.manager.update(Quiz, quizDto.quiz.id, quizDto.quiz);
+    await AppDataSource.manager.update(Quiz, quiz.quiz.id, {
+      title: quiz.quiz.title,
+      description: quiz.quiz.description,
+      isPublic: quiz.quiz.isPublic,
+      imgUrl: quiz.quiz.imgUrl
+
+    });
+
+
+    const questions = quiz.quiz.questions.map(async question => {
+      if (question.id) {
+        await AppDataSource.manager.update(Question, question.id, {
+          ...question
+        });
+      } else {
+        await AppDataSource.manager.save(Question, {
+          ...question,
+          quizId: quizToUpdate
+        });
+      }
+    });
+
+    await Promise.all(questions);
+    return quizToUpdate;
   }
+
 
   async delete(id: string) {
     let quiz = await AppDataSource.manager.findOne(Quiz, {

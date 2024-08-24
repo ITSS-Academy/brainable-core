@@ -6,8 +6,8 @@ import {
   Post
 } from "@nestjs/common";
 import { GameRecordService } from "./game-record.service";
-import { GameRecordDTO } from "../models/gameRecord.dto";
-import { GameRecord } from "../../db/src/entity/GameRecord";
+import { GameRecordDTO } from "../../models/gameRecord.dto";
+import { GameRecord } from "../../../db/src/entity/GameRecord";
 
 @Controller("game-record")
 export class GameRecordController {

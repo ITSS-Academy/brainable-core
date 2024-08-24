@@ -12,9 +12,10 @@ import {
 } from "@nestjs/common";
 
 import { DecodedIdToken } from "firebase-admin/lib/auth";
-import { QuizDTO } from "../models/quiz.dto";
-import { Quiz } from "../../db/src/entity/Quiz";
+import { CreateQuizDto } from "../../models/create-quiz.dto";
+import { Quiz } from "../../../db/src/entity/Quiz";
 import { QuizService } from "./quiz.service";
+import { UpdateQuizDto } from "../../models/update-quiz.dto";
 
 @Controller("quiz")
 export class QuizController {
@@ -22,10 +23,10 @@ export class QuizController {
   }
 
   @Post()
-  async createQuiz(@Req() req: any, @Body() quizDto: QuizDTO) {
+  async createQuiz(@Req() req: any, @Body() quizDto: CreateQuizDto) {
     try {
       let authData = req.user as DecodedIdToken;
-      let quiz: QuizDTO = {
+      let quiz: CreateQuizDto = {
         quiz: new Quiz(
           quizDto.quiz.title,
           quizDto.quiz.description,
@@ -62,23 +63,12 @@ export class QuizController {
   }
 
   @Put()
-  async updateQuiz(@Req() req: any, @Body() quizDTO: QuizDTO) {
+  async updateQuiz(@Req() req: any, @Body() quizDTO: UpdateQuizDto) {
     try {
-      let authData = req.user as DecodedIdToken;
 
-      let quiz: QuizDTO = {
-        quiz: new Quiz(
-          quizDTO.quiz.title,
-          quizDTO.quiz.description,
-          quizDTO.quiz.isPublic,
-          quizDTO.quiz.category,
-          quizDTO.quiz.imgUrl,
-          quizDTO.quiz.questions
-        )
-      };
-
-      await this.quizService.update(quiz);
+      await this.quizService.update(quizDTO);
     } catch (error) {
+      console.log(error);
       return new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { QuestionDTO } from "../models/question.dto";
-import { AppDataSource } from "../../db/src/data-source";
-import { Question } from "../../db/src/entity/Question";
+import { QuestionDTO } from "../../models/question.dto";
+import { AppDataSource } from "../../../db/src/data-source";
+import { Question } from "../../../db/src/entity/Question";
 
 @Injectable()
 export class QuestionService {
