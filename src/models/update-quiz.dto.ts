@@ -1,5 +1,4 @@
 import { Question } from "../../db/src/entity/Question";
-import { Categories } from "../../db/src/entity/Categories";
 
 export interface UpdateQuizDto {
   quiz: {
