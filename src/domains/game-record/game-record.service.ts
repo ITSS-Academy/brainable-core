@@ -5,6 +5,6 @@ import { AppDataSource } from "../../../db/src/data-source";
 @Injectable()
 export class GameRecordService {
   async create(gameRecord: GameRecordDTO) {
-    await AppDataSource.manager.save(gameRecord);
+    await AppDataSource.manager.save(gameRecord.gameRecord);
   }
 }

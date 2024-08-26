@@ -20,9 +20,9 @@ export class GameRecordController {
       let gameRecord: GameRecordDTO = {
         gameRecord: new GameRecord(
           gameRecordDto.gameRecord.gameId,
-          gameRecordDto.gameRecord.questionId,
+          gameRecordDto.gameRecord.score,
+          gameRecordDto.gameRecord.correctCount,
           gameRecordDto.gameRecord.playerName,
-          gameRecordDto.gameRecord.answer
         )
       };
       await this.gameRecord.create(gameRecord);

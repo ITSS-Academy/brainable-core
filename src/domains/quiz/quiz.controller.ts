@@ -36,10 +36,9 @@ export class QuizController {
           quizDto.quiz.questions
         )
       };
-
       await this.quizService.create(quiz, authData.uid);
     } catch (error) {
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -65,7 +64,6 @@ export class QuizController {
   @Put()
   async updateQuiz(@Req() req: any, @Body() quizDTO: UpdateQuizDto) {
     try {
-
       await this.quizService.update(quizDTO);
     } catch (error) {
       console.log(error);
