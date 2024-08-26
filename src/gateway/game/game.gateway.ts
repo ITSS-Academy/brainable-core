@@ -103,34 +103,35 @@ export class GameGateway {
     answer: number
   }, @ConnectedSocket() client: Socket): void {
     const room = this.rooms[data.pin];
-    if (room) {
+    // if (room) {
       // Tìm câu hỏi trong danh sách
-      let question = room.questions.find(q => q.questionId === data.questionId);
-      if (question) {
-        // Lưu câu trả lời của người chơi
-        question.answers[data.playerName] = data.answer.toString();
+      // let question = room.questions.find(q => q.questionId === data.questionId);
+      // if (question) {
+      //   // Lưu câu trả lời của người chơi
+      //   question.answers[data.playerName] = data.answer.toString();
 
         console.log(`Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`);
 
         // Gửi thống kê số lượng người chơi chọn từng đáp án về cho host
-        const answerStatistics = this.calculateAnswerStatistics(question);
-        this.server.to(room.hostId).emit("answerStatistics", {
-          questionId: data.questionId,
-          statistics: answerStatistics
-        });
+        // const answerStatistics = this.calculateAnswerStatistics(question);
+        // this.server.to(room.hostId).emit("answerStatistics", {
+        //   questionId: data.questionId,
+        //   statistics: answerStatistics
+        // });
+        // console.log(answerStatistics);
 
-        // Gửi lại đáp án đúng cho tất cả các player trong phòng
-        this.server.to(data.pin).emit("revealCorrectAnswer", {
-          questionId: data.questionId,
-          correctAnswer: question.correctAnswer
-        });
+        // // Gửi lại đáp án đúng cho tất cả các player trong phòng
+        // this.server.to(data.pin).emit("revealCorrectAnswer", {
+        //   questionId: data.questionId,
+        //   correctAnswer: question.correctAnswer
+        // });
 
-      } else {
-        client.emit("error", "Question not found");
-      }
-    } else {
-      client.emit("error", "Room not found");
-    }
+      // } else {
+      //   client.emit("error", "Question not found");
+      // }
+    // } else {
+      // client.emit("error", "Room not found");
+    // }
   }
 
 
