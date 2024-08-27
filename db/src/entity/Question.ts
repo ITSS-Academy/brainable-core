@@ -60,7 +60,7 @@ export class Question {
   @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 
-  @ManyToOne(() => Quiz, (quiz) => quiz.id)
+  @ManyToOne(() => Quiz, (quiz) => quiz.id, { onDelete: "CASCADE" })
   @JoinColumn({ name: "quizId" })
   quizId: Quiz;
 }

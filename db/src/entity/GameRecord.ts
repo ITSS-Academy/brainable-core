@@ -27,11 +27,11 @@ export class GameRecord {
   id: string;
 
   @ManyToOne(() => Game, (game) => game.id)
-  @JoinColumn()
+  @JoinColumn({ name: "gameId" })
   gameId: string;
 
   @OneToOne(() => Question, (question) => question.id)
-  @JoinColumn()
+  @JoinColumn({ name: "questionId" })
   questionId: string;
 
   @Column()

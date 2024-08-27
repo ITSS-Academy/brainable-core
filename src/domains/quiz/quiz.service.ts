@@ -9,7 +9,6 @@ import { UpdateQuizDto } from "../../models/update-quiz.dto";
 @Injectable()
 export class QuizService {
   async create(quiz: CreateQuizDto, authorId: string) {
-    console.log(quiz);
     let author = await AppDataSource.manager.findOne(Profile, {
       where: { uid: authorId }
     });
@@ -76,7 +75,6 @@ export class QuizService {
   }
 
   async update(quiz: UpdateQuizDto) {
-    console.log(quiz);
     let quizToUpdate = await AppDataSource.manager.findOne(Quiz, {
       where: { id: quiz.quiz.id }
     });
@@ -123,12 +121,12 @@ export class QuizService {
 
   async delete(id: string) {
     let quiz = await AppDataSource.manager.findOne(Quiz, {
-      where: { id: id }
+      where: { id: id },
+      relations: ["questions"]
     });
     if (!quiz) {
       throw new Error("Quiz not found");
     }
-
-    await AppDataSource.manager.delete(Quiz, id);
+    await AppDataSource.manager.remove(Quiz, quiz);
   }
 }
