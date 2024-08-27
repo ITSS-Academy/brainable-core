@@ -26,19 +26,21 @@ export class GameRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Game, (game) => game.id)
-  @JoinColumn()
+  @ManyToOne(() => Game, (game) => game.gameRecords)
+  @JoinColumn({ name: 'gameId' })
   gameId: string;
 
-  @Column()
+  @Column({default: 0})
   score: number;
 
-  @Column()
+  @Column({default: 0})
   correctCount: number;
 
-  // @OneToOne(() => Question, (question) => question.id)
-  // @JoinColumn()
-  // questionId: string;
+  @Column({default: 0})
+  incorrectCount: number;
+
+  @Column({default: 0})
+  noAnswerCount: number;
 
   @Column()
   playerName: string;

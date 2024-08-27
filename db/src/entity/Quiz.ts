@@ -50,7 +50,7 @@ export class Quiz {
   ])
   authorId: Profile;
 
-  @OneToMany(() => Question, (question) => question.quizId)
+  @OneToMany(() => Question, (question) => question.quizId, { cascade: true, onDelete: "CASCADE" })
   questions: Question[];
 
   @ManyToOne(() => Categories, (category) => category.uid)

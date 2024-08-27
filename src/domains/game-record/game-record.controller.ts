@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   HttpStatus,
-  Post
+  Post,
+  Query,
+  Req
 } from "@nestjs/common";
 import { GameRecordService } from "./game-record.service";
 import { GameRecordDTO } from "../../models/gameRecord.dto";
@@ -25,9 +28,20 @@ export class GameRecordController {
           gameRecordDto.gameRecord.playerName,
         )
       };
+      // gameRecord.gameRecord.incorrectCount = gameRecordDto.gameRecord.incorrectCount;
+      // gameRecord.gameRecord.noAnswerCount = gameRecordDto.gameRecord.noAnswerCount;
       await this.gameRecord.create(gameRecord);
     } catch (error) {
       return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get()
+  async getById(@Req() req:any, @Query("id") id: string){
+    try{
+      return await this.gameRecord.getById(id);
+    }catch(error){
+      return new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }
 }

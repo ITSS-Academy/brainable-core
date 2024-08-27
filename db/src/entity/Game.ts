@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -13,9 +14,8 @@ import { Quiz } from './Quiz';
 
 @Entity()
 export class Game {
-  constructor(joinCode: string, quizId: string) {
+  constructor(joinCode: string) {
     this.joinCode = joinCode;
-    this.quizId = quizId;
   }
 
   @PrimaryGeneratedColumn('uuid')
@@ -23,14 +23,16 @@ export class Game {
 
   @Column()
   joinCode: string;
+  
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
 
   @ManyToOne(() => Quiz, (quiz) => quiz.id)
   @JoinColumn({ name: 'quizId' })
-  quizId: string;
+  quizId: Quiz;
 
   @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId)
   gameRecords: GameRecord[];
-
 
   // @ManyToOne(() => Profile, (profile) => profile.games)
   @Column({ name: 'hostId' })
