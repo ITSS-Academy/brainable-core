@@ -4,39 +4,44 @@ import {
   JoinColumn,
   ManyToOne,
   OneToOne,
-  PrimaryGeneratedColumn
-} from "typeorm";
-import { Game } from "./Game";
-import { Question } from "./Question";
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Game } from './Game';
+import { Question } from './Question';
 
 @Entity()
 export class GameRecord {
   constructor(
     gameId: string,
-    questionId: string,
+    score: number,
+    correctCount: number,
     playerName: string,
-    answer: number
   ) {
     this.gameId = gameId;
-    this.questionId = questionId;
+    this.score = score;
+    this.correctCount = correctCount;
     this.playerName = playerName;
-    this.answer = answer;
   }
 
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Game, (game) => game.id)
-  @JoinColumn({ name: "gameId" })
+  @ManyToOne(() => Game, (game) => game.gameRecords)
+  @JoinColumn({ name: 'gameId' })
   gameId: string;
 
-  @OneToOne(() => Question, (question) => question.id)
-  @JoinColumn({ name: "questionId" })
-  questionId: string;
+  @Column({default: 0})
+  score: number;
+
+  @Column({default: 0})
+  correctCount: number;
+
+  @Column({default: 0})
+  incorrectCount: number;
+
+  @Column({default: 0})
+  noAnswerCount: number;
 
   @Column()
   playerName: string;
-
-  @Column()
-  answer: number;
 }

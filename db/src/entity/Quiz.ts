@@ -11,6 +11,7 @@ import { Profile } from "./Profile";
 import { Question } from "./Question";
 import { type } from "node:os";
 import { Categories } from "./Categories";
+import { Game } from "./Game";
 
 @Entity()
 export class Quiz {

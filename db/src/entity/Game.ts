@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -9,12 +10,12 @@ import {
 } from 'typeorm';
 import { GameRecord } from './GameRecord';
 import { Profile } from './Profile';
+import { Quiz } from './Quiz';
 
 @Entity()
 export class Game {
-  constructor(joinCode: string, hostId: string) {
+  constructor(joinCode: string) {
     this.joinCode = joinCode;
-    this.hostId = hostId;
   }
 
   @PrimaryGeneratedColumn('uuid')
@@ -22,11 +23,18 @@ export class Game {
 
   @Column()
   joinCode: string;
+  
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
+
+  @ManyToOne(() => Quiz, (quiz) => quiz.id)
+  @JoinColumn({ name: 'quizId' })
+  quizId: Quiz;
 
   @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId)
   gameRecords: GameRecord[];
 
-  @ManyToOne(() => Profile, (profile) => profile.games)
-  @JoinColumn()
+  // @ManyToOne(() => Profile, (profile) => profile.games)
+  @Column({ name: 'hostId' })
   hostId: string;
 }
