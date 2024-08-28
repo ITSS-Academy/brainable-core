@@ -1,4 +1,5 @@
 import { Question } from "../../db/src/entity/Question";
+import { Profile } from "../../db/src/entity/Profile";
 
 export interface UpdateQuizDto {
   quiz: {
@@ -10,6 +11,7 @@ export interface UpdateQuizDto {
     imgUrl: string;
     createdAt: Date;
     category: string;
+    authorId: Profile;
     questions: Question[];
   };
 }

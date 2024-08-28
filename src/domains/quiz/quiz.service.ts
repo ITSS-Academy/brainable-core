@@ -5,10 +5,15 @@ import { Quiz } from "../../../db/src/entity/Quiz";
 import { Profile } from "../../../db/src/entity/Profile";
 import { Question } from "../../../db/src/entity/Question";
 import { UpdateQuizDto } from "../../models/update-quiz.dto";
+import { SearchService } from "../../search/search.service";
 
 @Injectable()
 export class QuizService {
+  constructor(private searchService: SearchService) {
+  }
+
   async create(quiz: CreateQuizDto, authorId: string) {
+    console.log(quiz);
     let author = await AppDataSource.manager.findOne(Profile, {
       where: { uid: authorId }
     });
@@ -23,6 +28,8 @@ export class QuizService {
       authorId: author,
       questions: []
     });
+    await this.searchService.indexQuiz(newQuiz);
+
 
     const questions = quiz.quiz.questions.map(async question => {
       // check if timeLimit is 0 or null and set it 10
@@ -65,7 +72,7 @@ export class QuizService {
   async getById(id: string) {
     let quiz = await AppDataSource.manager.findOne(Quiz, {
       where: { id: id },
-      relations: ["questions", "category"],
+      relations: ["questions", "category", "authorId"],
       order: { createdAt: "ASC", questions: { createdAt: "ASC" } }
     });
     if (!quiz) {
@@ -86,11 +93,13 @@ export class QuizService {
       quiz.quiz.imgUrl = "https://firebasestorage.googleapis.com/v0/b/brainable-d5919.appspot.com/o/media.png?alt=media&token=b7bc0b71-587d-4dd3-932f-98ccb390bf6e";
     }
 
+    await this.searchService.updateQuiz(quiz.quiz);
     await AppDataSource.manager.update(Quiz, quiz.quiz.id, {
       title: quiz.quiz.title,
       description: quiz.quiz.description,
       isPublic: quiz.quiz.isPublic,
-      imgUrl: quiz.quiz.imgUrl
+      imgUrl: quiz.quiz.imgUrl,
+      category: quiz.quiz.category
     });
 
 
@@ -127,6 +136,7 @@ export class QuizService {
     if (!quiz) {
       throw new Error("Quiz not found");
     }
+    await this.searchService.removeQuiz(quiz.id);
     await AppDataSource.manager.remove(Quiz, quiz);
   }
 }

@@ -76,7 +76,7 @@ export class QuizController {
     try {
       await this.quizService.delete(id);
     } catch (error) {
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 }
