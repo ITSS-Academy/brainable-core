@@ -19,10 +19,11 @@ export class GameController {
 
   @Post()
   async create(@Req() req: any, @Body() gameDto: GameDTO) {
+    console.log(gameDto);
     try {
       let user = req.user;
       let game: GameDTO = {
-        game: new Game(gameDto.game.joinCode),
+        game: new Game(gameDto.game.joinCode, gameDto.game.quizId),
       };
       game.game.hostId = user.uid;
       console.log(game.game);
