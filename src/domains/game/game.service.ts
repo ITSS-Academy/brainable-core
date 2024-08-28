@@ -8,8 +8,8 @@ export class GameService {
   async create(game: GameDTO) {
     await AppDataSource.manager.save(Game,{
       joinCode: game.game.joinCode,
-      quizId: game.game.quizId,
       hostId: game.game.hostId,
+      quizId: game.game.quizId
     });
   }
 
@@ -36,6 +36,7 @@ export class GameService {
     return {
       ...result,
       totalQuestions: result.quizId.questions.length
+
     }
   }
 }

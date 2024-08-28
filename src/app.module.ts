@@ -10,6 +10,7 @@ import { GameRecordModule } from "./domains/game-record/game-record.module";
 import { GameGateway } from "./gateway/game/game.gateway";
 import { CategoriesModule } from "./domains/categories/categories.module";
 import { SearchModule } from "./search/search.module";
+import { QuestionRecordModule } from './domains/question-record/question-record.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { SearchModule } from "./search/search.module";
     GameModule,
     GameRecordModule,
     CategoriesModule,
-    SearchModule
+    SearchModule,
+    QuestionRecordModule
   ],
   controllers: [
     AppController
