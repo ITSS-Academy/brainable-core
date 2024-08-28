@@ -13,7 +13,14 @@ interface Room {
   questions: {
     questionId: string;
     correctAnswer: number;
-    answers: { [playerName: string]: string };
+    answers: {
+      [playerName: string]: {
+        answer: number,
+        time: number,
+
+      }
+    };
+
   }[];
 }
 
@@ -45,6 +52,7 @@ export class GameGateway {
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
+      client.join(data.pin);
       room.players[client.id] = data.username;
       console.log(`${data.username} joined room ${data.pin}`);
       this.server
@@ -64,7 +72,6 @@ export class GameGateway {
     if (!room) {
       client.emit("error", "Room not found");
     } else {
-      client.join(pin);
       this.server.to(client.id).emit("navigateToEnterName");
       console.log(`Room ${pin} exists`);
     }
@@ -140,30 +147,25 @@ export class GameGateway {
       questionId: string;
       playerName: string;
       answer: number;
+      time: number;
     },
     @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[data.pin];
-    // if (room) {
-    // Tìm câu hỏi trong danh sách
     let question = room.questions.find((q) => q.questionId == data.questionId);
     console.log(data);
     if (question) {
-      // Lưu câu trả lời của người chơi
-      question.answers[data.playerName] = data.answer.toString();
+      if (!question.answers[data.playerName]) {
+        question.answers[data.playerName] = { answer: 0, time: 0 };
+      }
+      question.answers[data.playerName].answer = data.answer;
+      question.answers[data.playerName].time = data.time;
 
       console.log(
         `Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`
       );
 
       this.server.to(data.pin).emit("playerSubmittedAnswer");
-
-      // } else {
-      //   client.emit("error", "Question not found");
-      // }
-      // } else {
-      // client.emit("error", "Room not found");
-      // }
     }
   }
 
@@ -231,7 +233,12 @@ export class GameGateway {
   private calculateAnswerStatistics(question: {
     questionId: string;
     correctAnswer: number;
-    answers: { [playerName: string]: string };
+    answers: {
+      [playerName: string]: {
+        answer: number,
+        time: number,
+      }
+    };
   }) {
     const statistics: { [answer: string]: number } = {
       1: 0,
@@ -241,10 +248,10 @@ export class GameGateway {
     };
 
     Object.values(question.answers).forEach((answer) => {
-      if (!statistics[answer]) {
-        statistics[answer] = 0;
+      if (!statistics[answer.answer]) {
+        statistics[answer.answer] = 0;
       }
-      statistics[answer] += 1;
+      statistics[answer.answer] += 1;
     });
 
     return statistics;
@@ -258,9 +265,6 @@ export class GameGateway {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
       const leaderboard = this.calculateLeaderboard(room);
-      // this.server.to(pin).emit("showLeaderboard", leaderboard);
-      // show all questions
-
       this.server.to(room.hostId).emit("questionList", leaderboard);
       console.log(`Game ended in room ${pin}. Leaderboard sent.`);
     } else {
@@ -273,25 +277,29 @@ export class GameGateway {
     const scores: { [playerName: string]: number } = {};
 
     room.questions.forEach((question) => {
-      Object.entries(question.answers).forEach(([playerName, answer]) => {
+      Object.entries(question.answers).forEach(([playerName, answerData]) => {
         if (!scores[playerName]) scores[playerName] = 0;
 
         // Chỉ cộng điểm nếu câu trả lời đúng
-        if (parseInt(answer) === question.correctAnswer) {
-          scores[playerName] += 1;
+        if (answerData.answer === question.correctAnswer) {
+          scores[playerName] += (1 / answerData.time) * 100000;
         }
       });
     });
 
-    // Sắp xếp bảng xếp hạng theo điểm số giảm dần
+    // Sắp xếp bảng xếp hạng theo điểm số giảm dần và làm tròn kết quả
     return Object.entries(scores)
-      .sort((a, b) => b[1] - a[1])
-      .map(([playerName, score]) => ({ playerName, score }));
+      .map(([playerName, score]) => ({ playerName, score: Math.round(score) }))
+      .sort((a, b) => b.score - a.score);
   }
 
-  @SubscribeMessage("leftRoom")
-  handleHostLeftRoom(client: Socket) {
-    console.log(`host left room: ${client.id}`);
+
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
     for (const pin in this.rooms) {
       const room = this.rooms[pin];
       if (room.hostId === client.id) {
@@ -306,14 +314,8 @@ export class GameGateway {
         console.log(`${username} left room ${pin}`);
       }
     }
-  }
 
-  handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
-  }
 
-  handleDisconnection(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
   }
 
 
