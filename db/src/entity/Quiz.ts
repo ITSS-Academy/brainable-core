@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn
@@ -52,6 +53,8 @@ export class Quiz {
 
   @OneToMany(() => Question, (question) => question.quizId, { cascade: true, onDelete: "CASCADE" })
   questions: Question[];
+
+  
 
   @ManyToOne(() => Categories, (category) => category.uid)
   @JoinColumn({ name: "categoryId" })

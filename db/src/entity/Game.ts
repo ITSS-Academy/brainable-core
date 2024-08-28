@@ -11,11 +11,13 @@ import {
 import { GameRecord } from "./GameRecord";
 import { Profile } from "./Profile";
 import { Quiz } from "./Quiz";
+import { QuestionRecord } from "./QuestionRecord";
 
 @Entity()
 export class Game {
-  constructor(joinCode: string) {
+  constructor(joinCode: string, quizId: Quiz) {
     this.joinCode = joinCode;
+    this.quizId = quizId;
   }
 
   @PrimaryGeneratedColumn("uuid")
@@ -27,12 +29,15 @@ export class Game {
   @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 
-  @ManyToOne(() => Quiz, (quiz) => quiz.id)
-  @JoinColumn({ name: "quizId" })
+  @ManyToOne(() => Quiz)
+  @JoinColumn()
   quizId: Quiz;
 
   @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId)
   gameRecords: GameRecord[];
+
+  @OneToMany(() => QuestionRecord, (questionRecord) => questionRecord.gameId)
+  questionRecords: QuestionRecord[];
 
   @Column({ name: "hostId" })
   hostId: string;

@@ -6,6 +6,7 @@ import { Question } from "./entity/Question";
 import { Game } from "./entity/Game";
 import { GameRecord } from "./entity/GameRecord";
 import { Categories } from "./entity/Categories";
+import { QuestionRecord } from "./entity/QuestionRecord";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -16,7 +17,7 @@ export const AppDataSource = new DataSource({
   database: "postgres",
   synchronize: true,
   logging: false,
-  entities: [Profile, Quiz, Question, Game, GameRecord, Categories],
+  entities: [Profile, Quiz, Question, Game, GameRecord, Categories, QuestionRecord],
   migrations: [],
   subscribers: [],
   ssl: { rejectUnauthorized: false }
