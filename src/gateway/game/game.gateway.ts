@@ -3,9 +3,9 @@ import {
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
-  WebSocketServer,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+  WebSocketServer
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
 
 interface Room {
   hostId: string;
@@ -24,79 +24,93 @@ export class GameGateway {
 
   private rooms: { [pin: string]: Room } = {};
 
-  @SubscribeMessage('createRoom')
+  @SubscribeMessage("createRoom")
   handleCreateRoom(
     @MessageBody() pin: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     this.rooms[pin] = {
       hostId: client.id,
       players: {},
-      questions: [],
+      questions: []
     };
     client.join(pin);
     console.log(`Room ${pin} created by host ${client.id}`);
   }
 
-  @SubscribeMessage('joinRoom')
+  @SubscribeMessage("joinRoom")
   handleJoinRoom(
     @MessageBody() data: { pin: string; username: string },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
       room.players[client.id] = data.username;
-      client.join(data.pin);
       console.log(`${data.username} joined room ${data.pin}`);
       this.server
         .to(room.hostId)
-        .emit('guestJoined', { username: data.username });
+        .emit("guestJoined", { username: data.username });
     } else {
-      client.emit('error', 'Room not found');
+      client.emit("error", "Room not found");
     }
   }
 
-  @SubscribeMessage('startGame')
+  @SubscribeMessage("checkRoomExist")
+  handleCheckRoomExist(
+    @MessageBody() pin: string,
+    @ConnectedSocket() client: Socket
+  ): void {
+    const room = this.rooms[pin];
+    if (!room) {
+      client.emit("error", "Room not found");
+    } else {
+      client.join(pin);
+      this.server.to(client.id).emit("navigateToEnterName");
+      console.log(`Room ${pin} exists`);
+    }
+  }
+
+  @SubscribeMessage("startGame")
   handleStartGame(
     @MessageBody() pin: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
-      this.server.to(pin).emit('navigateToCountDown');
+      this.server.to(pin).emit("navigateToCountDown");
       console.log(`Game started in room ${pin}`);
     } else {
-      console.log('Unauthorized: Only the host can start the game.');
-      client.emit('error', 'Only the host can start the game.');
+      console.log("Unauthorized: Only the host can start the game.");
+      client.emit("error", "Only the host can start the game.");
     }
   }
 
-  @SubscribeMessage('showAnswer')
+  @SubscribeMessage("showAnswer")
   handleCountdown(
     @MessageBody() pin: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
     console.log(room.hostId);
     console.log(client.id);
     if (room && room.hostId === client.id) {
-      this.server.to(pin).emit('chooseAnswer');
+      this.server.to(pin).emit("chooseAnswer");
       console.log(`Countdown started in room ${pin}`);
     } else {
-      console.log('Unauthorized: Only the host can start the countdown.');
-      client.emit('error', 'Only the host can start the countdown.');
+      console.log("Unauthorized: Only the host can start the countdown.");
+      client.emit("error", "Only the host can start the countdown.");
     }
   }
 
-  @SubscribeMessage('sendQuestion')
+  @SubscribeMessage("sendQuestion")
   handleSendQuestion(
     @MessageBody()
-    data: {
+      data: {
       pin: string;
       questionId: string;
       correctAnswer: number;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[data.pin];
     if (room && room.hostId === client.id) {
@@ -104,30 +118,30 @@ export class GameGateway {
       room.questions.push({
         questionId: data.questionId,
         correctAnswer: data.correctAnswer,
-        answers: {},
+        answers: {}
       });
 
       // Gửi câu hỏi cho tất cả người chơi
-      this.server.to(data.pin).emit('receiveQuestion', data.questionId);
+      this.server.to(data.pin).emit("receiveQuestion", data.questionId);
       console.log(
-        `Question ${data.questionId} sent to room ${data.pin} with correct answer ${data.correctAnswer}`,
+        `Question ${data.questionId} sent to room ${data.pin} with correct answer ${data.correctAnswer}`
       );
     } else {
-      console.log('Unauthorized: Only the host can send a question.');
-      client.emit('error', 'Only the host can send a question.');
+      console.log("Unauthorized: Only the host can send a question.");
+      client.emit("error", "Only the host can send a question.");
     }
   }
 
-  @SubscribeMessage('sendAnswer')
+  @SubscribeMessage("sendAnswer")
   handleSendAnswer(
     @MessageBody()
-    data: {
+      data: {
       pin: string;
       questionId: string;
       playerName: string;
       answer: number;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[data.pin];
     // if (room) {
@@ -139,10 +153,10 @@ export class GameGateway {
       question.answers[data.playerName] = data.answer.toString();
 
       console.log(
-        `Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`,
+        `Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`
       );
 
-      this.server.to(data.pin).emit('playerSubmittedAnswer');
+      this.server.to(data.pin).emit("playerSubmittedAnswer");
 
       // } else {
       //   client.emit("error", "Question not found");
@@ -153,64 +167,64 @@ export class GameGateway {
     }
   }
 
-  @SubscribeMessage('nextQuestion')
+  @SubscribeMessage("nextQuestion")
   handleNextQuestion(
     @MessageBody() pin: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
-      this.server.to(pin).emit('navigateToNextQuestion');
+      this.server.to(pin).emit("navigateToNextQuestion");
       console.log(`Next question started in room ${pin}`);
     } else {
-      console.log('Unauthorized: Only the host can start the countdown.');
-      client.emit('error', 'Only the host can start the countdown.');
+      console.log("Unauthorized: Only the host can start the countdown.");
+      client.emit("error", "Only the host can start the countdown.");
     }
   }
 
-  @SubscribeMessage('nextShowResults')
+  @SubscribeMessage("nextShowResults")
   handleNextShowResults(
     @MessageBody() pin: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
-      this.server.to(pin).emit('navigateToResults');
+      this.server.to(pin).emit("navigateToResults");
       console.log(`Next show results started in room ${pin}`);
     } else {
-      console.log('Unauthorized: Only the host can start the countdown.');
-      client.emit('error', 'Only the host can start the countdown.');
+      console.log("Unauthorized: Only the host can start the countdown.");
+      client.emit("error", "Only the host can start the countdown.");
     }
   }
 
-  @SubscribeMessage('showResults')
+  @SubscribeMessage("showResults")
   handleShowResult(
     @MessageBody()
-    data: {
+      data: {
       pin: string;
       questionId: string;
     },
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[data.pin];
     if (room && room.hostId === client.id) {
       // Tìm câu hỏi trong danh sách
       const question = room.questions.find(
-        (q) => q.questionId == data.questionId,
+        (q) => q.questionId == data.questionId
       );
       // Gửi thống kê số lượng người chơi chọn từng đáp án về cho host
       const answerStatistics = this.calculateAnswerStatistics(question);
-      this.server.to(room.hostId).emit('answerStatistics', {
-        answerStatistics: answerStatistics,
+      this.server.to(room.hostId).emit("answerStatistics", {
+        answerStatistics: answerStatistics
       });
 
       // Gửi lại đáp án đúng cho tất cả người chơi
-      this.server.to(data.pin).emit('correctAnswer', {
-        correctAnswer: question.correctAnswer,
+      this.server.to(data.pin).emit("correctAnswer", {
+        correctAnswer: question.correctAnswer
       });
     } else {
-      console.log('Unauthorized: Only the host can show the result.');
-      client.emit('error', 'Only the host can show the result.');
+      console.log("Unauthorized: Only the host can show the result.");
+      client.emit("error", "Only the host can show the result.");
     }
   }
 
@@ -223,7 +237,7 @@ export class GameGateway {
       1: 0,
       2: 0,
       3: 0,
-      4: 0,
+      4: 0
     };
 
     Object.values(question.answers).forEach((answer) => {
@@ -236,10 +250,10 @@ export class GameGateway {
     return statistics;
   }
 
-  @SubscribeMessage('endGame')
+  @SubscribeMessage("endGame")
   handleEndGame(
     @MessageBody() pin: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
@@ -247,11 +261,11 @@ export class GameGateway {
       // this.server.to(pin).emit("showLeaderboard", leaderboard);
       // show all questions
 
-      this.server.to(room.hostId).emit('questionList', room.questions);
+      this.server.to(room.hostId).emit("questionList", leaderboard);
       console.log(`Game ended in room ${pin}. Leaderboard sent.`);
     } else {
-      console.log('Unauthorized: Only the host can end the game.');
-      client.emit('error', 'Only the host can end the game.');
+      console.log("Unauthorized: Only the host can end the game.");
+      client.emit("error", "Only the host can end the game.");
     }
   }
 
@@ -275,19 +289,20 @@ export class GameGateway {
       .map(([playerName, score]) => ({ playerName, score }));
   }
 
-  handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+  @SubscribeMessage("leftRoom")
+  handleHostLeftRoom(client: Socket) {
+    console.log(`host left room: ${client.id}`);
     for (const pin in this.rooms) {
       const room = this.rooms[pin];
       if (room.hostId === client.id) {
         delete this.rooms[pin];
-        this.server.to(pin).emit('error', 'Host has left the game');
+        this.server.to(pin).emit("error", "Host has left the game");
         this.server.in(pin).socketsLeave(pin); // Kick all players out of the room
         console.log(`Room ${pin} deleted because host disconnected`);
       } else if (room.players[client.id]) {
         const username = room.players[client.id];
         delete room.players[client.id];
-        this.server.to(room.hostId).emit('guestLeft', { username });
+        this.server.to(room.hostId).emit("guestLeft", { username });
         console.log(`${username} left room ${pin}`);
       }
     }
@@ -296,4 +311,10 @@ export class GameGateway {
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
   }
+
+  handleDisconnection(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
+  }
+
+
 }

@@ -6,11 +6,11 @@ import {
   ManyToOne,
   OneToMany,
   OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { GameRecord } from './GameRecord';
-import { Profile } from './Profile';
-import { Quiz } from './Quiz';
+  PrimaryGeneratedColumn
+} from "typeorm";
+import { GameRecord } from "./GameRecord";
+import { Profile } from "./Profile";
+import { Quiz } from "./Quiz";
 
 @Entity()
 export class Game {
@@ -18,23 +18,22 @@ export class Game {
     this.joinCode = joinCode;
   }
 
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column()
   joinCode: string;
-  
-  @CreateDateColumn({ type: 'timestamptz' })
+
+  @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 
   @ManyToOne(() => Quiz, (quiz) => quiz.id)
-  @JoinColumn({ name: 'quizId' })
+  @JoinColumn({ name: "quizId" })
   quizId: Quiz;
 
   @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId)
   gameRecords: GameRecord[];
 
-  // @ManyToOne(() => Profile, (profile) => profile.games)
-  @Column({ name: 'hostId' })
+  @Column({ name: "hostId" })
   hostId: string;
 }

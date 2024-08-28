@@ -78,6 +78,8 @@ export class QuizService {
     if (!quiz) {
       throw new Error("Quiz not found");
     }
+    quiz["totalQuestions"] = quiz.questions.length;
+
     return quiz;
   }
 

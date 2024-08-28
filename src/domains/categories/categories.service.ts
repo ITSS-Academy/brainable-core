@@ -18,7 +18,7 @@ export class CategoriesService {
   async getCategoryById(id: string) {
     return await AppDataSource.manager.find(Categories, {
       where: { uid: id },
-      relations: ["quizzes"]
+      relations: ["quizzes", "quizzes.questions"]
     });
   }
 
