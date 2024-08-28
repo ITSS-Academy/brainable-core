@@ -23,7 +23,10 @@ export class CategoriesService {
   }
 
   async getAllCategories() {
-    return await AppDataSource.manager.find(Categories);
+    return await AppDataSource.manager.find(Categories,
+      {
+        relations: ["quizzes"]
+      });
   }
 
 }
