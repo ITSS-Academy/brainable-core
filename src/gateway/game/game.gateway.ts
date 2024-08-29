@@ -153,7 +153,7 @@ export class GameGateway {
     @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[data.pin];
-    let question = room.questions.find((q) => q.questionId == data.questionId);
+    let question = room.questions[this.currentQuestion];
     console.log(data);
     if (question) {
       if (!question.answers[data.playerName]) {
@@ -161,12 +161,20 @@ export class GameGateway {
       }
       question.answers[data.playerName].answer = data.answer;
       question.answers[data.playerName].time = data.time;
-      if (this.currentQuestion === 0) {
-        question.answers[data.playerName].score = (1 / data.time) * 100000;
+      if (question.correctAnswer === data.answer) {
+        if (this.currentQuestion === 0) {
+          question.answers[data.playerName].score = Math.round((1 / data.time) * 100000);
+        } else {
+          question.answers[data.playerName].score = Math.round((1 / data.time) * 100000) + room.questions[this.currentQuestion - 1].answers[data.playerName].score;
+        }
       } else {
-        question.answers[data.playerName].score = (1 / data.time) * 100000 + room.questions[this.currentQuestion - 1].answers[data.playerName].score;
-        this.currentQuestion++;
+        if (this.currentQuestion === 0) {
+          question.answers[data.playerName].score = 0;
+        } else {
+          question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName].score;
+        }
       }
+      console.log(question);
 
       console.log(
         `Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`
@@ -182,6 +190,7 @@ export class GameGateway {
     @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
+    this.currentQuestion++;
     if (room && room.hostId === client.id) {
       this.server.to(pin).emit("navigateToNextQuestion");
       console.log(`Next question started in room ${pin}`);
@@ -237,7 +246,7 @@ export class GameGateway {
     }
   }
 
-  @SubscribeMessage("showTop10")
+  @SubscribeMessage("showTop5")
   handleShowTop10(
     @MessageBody() pin: string,
     @ConnectedSocket() client: Socket
@@ -245,8 +254,11 @@ export class GameGateway {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
       // show top 10 score in room
-      const leaderboard = this.calculateLeaderboard(room).slice(0, 5);
-      this.server.to(room.hostId).emit("leaderboardTop10", leaderboard);
+      let leaderboard = this.calculateLeaderboard(room);
+      if (leaderboard.length > 5) {
+        leaderboard = leaderboard.slice(0, 5);
+      }
+      this.server.to(room.hostId).emit("leaderboardTop5", leaderboard);
       console.log(`Leaderboard sent to room ${pin}`);
     } else {
       console.log("Unauthorized: Only the host can show the leaderboard.");
@@ -306,6 +318,7 @@ export class GameGateway {
         scores[playerName] = answerData.score;
       });
     });
+    console.log(scores);
 
     // Sort the leaderboard by score in descending order and round the results
     return Object.entries(scores)
