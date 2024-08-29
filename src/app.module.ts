@@ -10,7 +10,7 @@ import { GameRecordModule } from "./domains/game-record/game-record.module";
 import { GameGateway } from "./gateway/game/game.gateway";
 import { CategoriesModule } from "./domains/categories/categories.module";
 import { SearchModule } from "./search/search.module";
-import { QuestionRecordModule } from './domains/question-record/question-record.module';
+import { QuestionRecordModule } from "./domains/question-record/question-record.module";
 
 @Module({
   imports: [
@@ -35,7 +35,8 @@ export class AppModule implements NestModule {
       .exclude(
         { path: "categories", method: RequestMethod.ALL },
         { path: "categories/:id", method: RequestMethod.ALL },
-        { path: "search", method: RequestMethod.ALL }
+        { path: "search", method: RequestMethod.ALL },
+        { path: "quiz/:id", method: RequestMethod.ALL }
       )
       .forRoutes("*");
   }

@@ -17,7 +17,7 @@ interface Room {
       [playerName: string]: {
         answer: number,
         time: number,
-
+        score: number
       }
     };
 
@@ -30,6 +30,7 @@ export class GameGateway {
   server: Server;
 
   private rooms: { [pin: string]: Room } = {};
+  private currentQuestion: number = 0;
 
   @SubscribeMessage("createRoom")
   handleCreateRoom(
@@ -156,10 +157,16 @@ export class GameGateway {
     console.log(data);
     if (question) {
       if (!question.answers[data.playerName]) {
-        question.answers[data.playerName] = { answer: 0, time: 0 };
+        question.answers[data.playerName] = { answer: 0, time: 0, score: 0 };
       }
       question.answers[data.playerName].answer = data.answer;
       question.answers[data.playerName].time = data.time;
+      if (this.currentQuestion === 0) {
+        question.answers[data.playerName].score = (1 / data.time) * 100000;
+      } else {
+        question.answers[data.playerName].score = (1 / data.time) * 100000 + room.questions[this.currentQuestion - 1].answers[data.playerName].score;
+        this.currentQuestion++;
+      }
 
       console.log(
         `Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`
@@ -230,6 +237,23 @@ export class GameGateway {
     }
   }
 
+  @SubscribeMessage("showTop10")
+  handleShowTop10(
+    @MessageBody() pin: string,
+    @ConnectedSocket() client: Socket
+  ): void {
+    const room = this.rooms[pin];
+    if (room && room.hostId === client.id) {
+      // show top 10 score in room
+      const leaderboard = this.calculateLeaderboard(room).slice(0, 5);
+      this.server.to(room.hostId).emit("leaderboardTop10", leaderboard);
+      console.log(`Leaderboard sent to room ${pin}`);
+    } else {
+      console.log("Unauthorized: Only the host can show the leaderboard.");
+      client.emit("error", "Only the host can show the leaderboard.");
+    }
+  }
+
   private calculateAnswerStatistics(question: {
     questionId: string;
     correctAnswer: number;
@@ -278,16 +302,12 @@ export class GameGateway {
 
     room.questions.forEach((question) => {
       Object.entries(question.answers).forEach(([playerName, answerData]) => {
-        if (!scores[playerName]) scores[playerName] = 0;
-
-        // Chỉ cộng điểm nếu câu trả lời đúng
-        if (answerData.answer === question.correctAnswer) {
-          scores[playerName] += (1 / answerData.time) * 100000;
-        }
+        // Update the player's score with the score from the last question
+        scores[playerName] = answerData.score;
       });
     });
 
-    // Sắp xếp bảng xếp hạng theo điểm số giảm dần và làm tròn kết quả
+    // Sort the leaderboard by score in descending order and round the results
     return Object.entries(scores)
       .map(([playerName, score]) => ({ playerName, score: Math.round(score) }))
       .sort((a, b) => b.score - a.score);

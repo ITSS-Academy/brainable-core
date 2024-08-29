@@ -1,6 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { CreateSearchDto } from "./dto/create-search.dto";
-import { UpdateSearchDto } from "./dto/update-search.dto";
 import { Client } from "@elastic/elasticsearch";
 import { Quiz } from "../../db/src/entity/Quiz";
 

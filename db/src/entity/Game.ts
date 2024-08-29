@@ -30,7 +30,7 @@ export class Game {
   createdAt: Date;
 
   @ManyToOne(() => Quiz)
-  @JoinColumn()
+  @JoinColumn({ name: "quizId" })
   quizId: Quiz;
 
   @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId)

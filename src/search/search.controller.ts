@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, HttpException, HttpStatus } from "@nestjs/common";
 import { SearchService } from "./search.service";
 import { CreateSearchDto } from "./dto/create-search.dto";
 import { UpdateSearchDto } from "./dto/update-search.dto";
@@ -10,7 +10,11 @@ export class SearchController {
 
   @Get()
   findAll(@Query("q") q: string) {
-    return this.searchService.searchQuiz(q);
+    try {
+      return this.searchService.searchQuiz(q);
+    } catch (error) {
+      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
 
