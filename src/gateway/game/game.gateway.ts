@@ -273,9 +273,9 @@ export class GameGateway {
     if (room && room.hostId === client.id) {
       // show top 10 score in room
       let leaderboard = this.calculateLeaderboard(room);
-      if (leaderboard.length > 5) {
-        leaderboard = leaderboard.slice(0, 5);
-      }
+      // if (leaderboard.length > 5) {
+      //   leaderboard = leaderboard.slice(0, 5);
+      // }
       this.server.to(room.hostId).emit("leaderboardTop5", leaderboard);
       console.log(`Leaderboard sent to room ${pin}`);
     } else {
