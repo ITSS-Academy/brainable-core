@@ -99,8 +99,6 @@ export class GameGateway {
     @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
-    console.log(room.hostId);
-    console.log(client.id);
     if (room && room.hostId === client.id) {
       this.server.to(pin).emit("chooseAnswer");
       console.log(`Countdown started in room ${pin}`);
@@ -152,35 +150,55 @@ export class GameGateway {
     },
     @ConnectedSocket() client: Socket
   ): void {
-    const room = this.rooms[data.pin];
-    let question = room.questions[this.currentQuestion];
-    console.log(data);
-    if (question) {
+    try {
+      const room = this.rooms[data.pin];
+      if (!room) {
+        client.emit("error", "Room not found");
+        return;
+      }
+
+      const question = room.questions.find(
+        (q) => q.questionId === data.questionId
+      );
+      if (!question) {
+        client.emit("error", "Question not found");
+        return;
+      }
+
       if (!question.answers[data.playerName]) {
         question.answers[data.playerName] = { answer: 0, time: 0, score: 0 };
       }
+
       question.answers[data.playerName].answer = data.answer;
       question.answers[data.playerName].time = data.time;
+
       if (question.correctAnswer === data.answer) {
+        const newScore = Math.round((1 / data.time) * 100000);
         if (this.currentQuestion === 0) {
-          question.answers[data.playerName].score = Math.round((1 / data.time) * 100000);
+          question.answers[data.playerName].score = newScore;
         } else {
-          question.answers[data.playerName].score = Math.round((1 / data.time) * 100000) + room.questions[this.currentQuestion - 1].answers[data.playerName].score;
+          const previousScore = room.questions[this.currentQuestion - 1].answers[data.playerName]?.score || 0;
+          const totalScore = newScore + previousScore;
+
+          // Ensure the total score does not exceed the maximum safe integer value
+          if (totalScore > Number.MAX_SAFE_INTEGER) {
+            question.answers[data.playerName].score = Number.MAX_SAFE_INTEGER;
+          } else {
+            question.answers[data.playerName].score = totalScore;
+          }
         }
       } else {
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = 0;
         } else {
-          question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName].score;
+          question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName]?.score || 0;
         }
       }
-      console.log(question);
-
-      console.log(
-        `Player ${data.playerName} answered question ${data.questionId} with ${data.answer} in room ${data.pin}`
-      );
 
       this.server.to(data.pin).emit("playerSubmittedAnswer");
+    } catch (error) {
+      console.log(error);
+      client.emit("error", "An error occurred while processing the answer");
     }
   }
 
@@ -302,6 +320,7 @@ export class GameGateway {
     if (room && room.hostId === client.id) {
       const leaderboard = this.calculateLeaderboard(room);
       this.server.to(room.hostId).emit("questionList", leaderboard);
+      this.currentQuestion = 0;
       console.log(`Game ended in room ${pin}. Leaderboard sent.`);
     } else {
       console.log("Unauthorized: Only the host can end the game.");
@@ -326,6 +345,64 @@ export class GameGateway {
       .sort((a, b) => b.score - a.score);
   }
 
+  @SubscribeMessage("getLastQuestionScore")
+  handleGetLastQuestionScore(
+    @MessageBody() data: { pin: string, gameId: string },
+    @ConnectedSocket() client: Socket
+  ): void {
+    const room = this.rooms[data.pin];
+    if (room) {
+      const results = this.getLastQuestionScore(room, data.gameId);
+      console.log(results);
+      this.server.to(room.hostId).emit("lastQuestionScore", results);
+    } else {
+      client.emit("error", "Room not found");
+    }
+  }
+
+  private getLastQuestionScore(room: Room, gameId: string): {
+    gameId: string,
+    score: number,
+    correctCount: number,
+    incorrectCount: number,
+    noAnswerCount: number,
+    playerName: string
+  }[] {
+    const results = [];
+    const lastQuestion = room.questions[room.questions.length - 1]; // Lấy câu hỏi cuối cùng
+    const correctCounts: { [playerName: string]: number } = {};
+    const incorrectCounts: { [playerName: string]: number } = {};
+    const noAnswerCounts: { [playerName: string]: number } = {};
+
+    room.questions.forEach((question) => {
+      Object.entries(question.answers).forEach(([playerName, answerData]) => {
+        if (answerData.answer === question.correctAnswer) {
+          correctCounts[playerName] = (correctCounts[playerName] || 0) + 1;
+        } else if (answerData.answer === 0) {
+          noAnswerCounts[playerName] = (noAnswerCounts[playerName] || 0) + 1;
+        } else {
+          incorrectCounts[playerName] = (incorrectCounts[playerName] || 0) + 1;
+        }
+      });
+    });
+
+    // Đẩy thông tin từ câu hỏi cuối cùng vào mảng
+    Object.entries(lastQuestion.answers).forEach(([playerName, answerData]) => {
+      if (answerData.score > 0) {
+        results.push({
+          gameId,
+          score: answerData.score,
+          correctCount: correctCounts[playerName] || 0, // Tổng số câu đúng
+          incorrectCount: incorrectCounts[playerName] || 0, // Tổng số câu sai
+          noAnswerCount: noAnswerCounts[playerName] || 0, // Tổng số câu không trả lời
+          playerName
+        });
+      }
+    });
+
+    return results;
+  }
+
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -339,6 +416,7 @@ export class GameGateway {
         delete this.rooms[pin];
         this.server.to(pin).emit("error", "Host has left the game");
         this.server.in(pin).socketsLeave(pin); // Kick all players out of the room
+        this.currentQuestion = 0;
         console.log(`Room ${pin} deleted because host disconnected`);
       } else if (room.players[client.id]) {
         const username = room.players[client.id];
@@ -347,9 +425,5 @@ export class GameGateway {
         console.log(`${username} left room ${pin}`);
       }
     }
-
-
   }
-
-
 }

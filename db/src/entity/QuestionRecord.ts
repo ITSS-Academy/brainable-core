@@ -12,7 +12,20 @@ import { Game } from "./Game";
 
 @Entity()
 export class QuestionRecord {
-  constructor() {
+  constructor(
+    gameId: string,
+    question: Question,
+    countA: number,
+    countB: number,
+    countC: number,
+    countD: number
+  ) {
+    this.gameId = gameId;
+    this.question = question;
+    this.countA = countA;
+    this.countB = countB;
+    this.countC = countC;
+    this.countD = countD;
   }
 
   @PrimaryGeneratedColumn("uuid")
@@ -22,7 +35,7 @@ export class QuestionRecord {
   gameId: string;
 
   @ManyToOne(() => Question)
-  @JoinColumn()
+  @JoinColumn({ name: "questionId" })
   question: Question;
 
   @Column({ default: 0 })

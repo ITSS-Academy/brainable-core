@@ -23,10 +23,17 @@ export class CategoriesService {
   }
 
   async getAllCategories() {
-    return await AppDataSource.manager.find(Categories,
-      {
-        relations: ["quizzes"]
+    const categories = await AppDataSource.manager.find(Categories, {
+      relations: ["quizzes", "quizzes.questions"]
+    });
+
+    categories.forEach(category => {
+      category.quizzes.forEach(quiz => {
+        quiz["totalQuestions"] = quiz.questions.length;
       });
+    });
+
+    return categories;
   }
 
 }

@@ -8,47 +8,52 @@ import {
   Delete,
   HttpException,
   HttpStatus,
-  Query,
-} from '@nestjs/common';
-import { QuestionRecordService } from './question-record.service';
-import { QuestionRecordDTO } from 'src/models/question-record.dto';
-import { QuestionRecord } from 'db/src/entity/QuestionRecord';
+  Query
+} from "@nestjs/common";
+import { QuestionRecordService } from "./question-record.service";
+import { QuestionRecordDTO } from "src/models/question-record.dto";
+import { QuestionRecord } from "db/src/entity/QuestionRecord";
 
-@Controller('question-record')
+@Controller("question-record")
 export class QuestionRecordController {
-  constructor(private readonly questionRecordService: QuestionRecordService) {}
+  constructor(private readonly questionRecordService: QuestionRecordService) {
+  }
 
   @Post()
   async create(@Body() questionRecordDto: QuestionRecordDTO) {
+    console.log(questionRecordDto);
     try {
       let questionRecord: QuestionRecordDTO = {
-        questionRecord: new QuestionRecord(),
+        questionRecord: new QuestionRecord(
+          questionRecordDto.questionRecord.gameId,
+          questionRecordDto.questionRecord.question,
+          questionRecordDto.questionRecord.countA,
+          questionRecordDto.questionRecord.countB,
+          questionRecordDto.questionRecord.countC,
+          questionRecordDto.questionRecord.countD
+        )
       };
-      questionRecord.questionRecord.question =
-        questionRecordDto.questionRecord.question;
-      questionRecord.questionRecord.gameId = questionRecordDto.questionRecord.gameId;
+
       await this.questionRecordService.create(questionRecord);
     } catch (error) {
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
-  @Get('byQuestionId')
-  async getByQuestionId(@Query('id') id: string) {
-    try{
+  @Get("byQuestionId")
+  async getByQuestionId(@Query("id") id: string) {
+    try {
       return await this.questionRecordService.getByQuestionId(id);
-    }
-    catch(error){
+    } catch (error) {
       return new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }
 
-  @Get('byGameId')
-  async getByGameId(@Query('id') id: string) {
-    try{
+  @Get("byGameId")
+  async getByGameId(@Query("id") id: string) {
+    try {
       return await this.questionRecordService.getByGameId(id);
-    }
-    catch(error){
+    } catch (error) {
       return new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }

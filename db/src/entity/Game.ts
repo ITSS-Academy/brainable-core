@@ -33,10 +33,10 @@ export class Game {
   @JoinColumn({ name: "quizId" })
   quizId: Quiz;
 
-  @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId)
+  @OneToMany(() => GameRecord, (gameRecord) => gameRecord.gameId, { cascade: true, onDelete: "CASCADE" })
   gameRecords: GameRecord[];
 
-  @OneToMany(() => QuestionRecord, (questionRecord) => questionRecord.gameId)
+  @OneToMany(() => QuestionRecord, (questionRecord) => questionRecord.gameId, { cascade: true, onDelete: "CASCADE" })
   questionRecords: QuestionRecord[];
 
   @Column({ name: "hostId" })

@@ -5,13 +5,15 @@ import { GameRecord } from "db/src/entity/GameRecord";
 
 @Injectable()
 export class GameRecordService {
-  async create(gameRecord: GameRecordDTO) {
-    await AppDataSource.manager.save(gameRecord.gameRecord);
+  async create(gameRecords: { gameRecord: GameRecord }[]) {
+    for (const gameRecordDto of gameRecords) {
+      await AppDataSource.manager.save(gameRecordDto.gameRecord);
+    }
   }
 
-  async getById(id: string)  {
+  async getById(id: string) {
     let result = await AppDataSource.manager.findOne(GameRecord, {
-      where: { id: id },
+      where: { id: id }
     });
     if (!result) {
       throw new HttpException("Game record not found", HttpStatus.NOT_FOUND);

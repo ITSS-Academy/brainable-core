@@ -1,5 +1,5 @@
-import { GameRecord } from '../../db/src/entity/GameRecord';
+import { GameRecord } from "../../db/src/entity/GameRecord";
 
 export interface GameRecordDTO {
-  gameRecord: GameRecord;
+  gameRecord: GameRecord[];
 }

@@ -20,16 +20,20 @@ export class GameRecordController {
   @Post()
   async create(@Body() gameRecordDto: GameRecordDTO) {
     try {
-      let gameRecord: GameRecordDTO = {
-        gameRecord: new GameRecord(
-          gameRecordDto.gameRecord.gameId,
-          gameRecordDto.gameRecord.score,
-          gameRecordDto.gameRecord.correctCount,
-          gameRecordDto.gameRecord.playerName,
-        )
-      };
-      // gameRecord.gameRecord.incorrectCount = gameRecordDto.gameRecord.incorrectCount;
-      // gameRecord.gameRecord.noAnswerCount = gameRecordDto.gameRecord.noAnswerCount;
+      let gameRecord: { gameRecord: GameRecord }[] = gameRecordDto.gameRecord.map(
+        (gameRecord) => {
+          return {
+            gameRecord: new GameRecord(
+              gameRecord.gameId,
+              gameRecord.score,
+              gameRecord.correctCount,
+              gameRecord.incorrectCount,
+              gameRecord.noAnswerCount,
+              gameRecord.playerName
+            )
+          };
+        }
+      );
       await this.gameRecord.create(gameRecord);
     } catch (error) {
       return new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -37,10 +41,10 @@ export class GameRecordController {
   }
 
   @Get()
-  async getById(@Req() req:any, @Query("id") id: string){
-    try{
+  async getById(@Req() req: any, @Query("id") id: string) {
+    try {
       return await this.gameRecord.getById(id);
-    }catch(error){
+    } catch (error) {
       return new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }

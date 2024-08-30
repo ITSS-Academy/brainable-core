@@ -19,35 +19,33 @@ export class GameController {
 
   @Post()
   async create(@Req() req: any, @Body() gameDto: GameDTO) {
-    console.log(gameDto);
     try {
       let user = req.user;
       let game: GameDTO = {
-        game: new Game(gameDto.game.joinCode, gameDto.game.quizId),
+        game: new Game(gameDto.game.joinCode, gameDto.game.quizId)
       };
       game.game.hostId = user.uid;
-      console.log(game.game);
-      await this.gameService.create(game);
+      return await this.gameService.create(game);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get()
+  async get(@Req() req: any) {
+    try {
+      let user = req.user;
+      return await this.gameService.getByHostId(user.uid);
     } catch (error) {
       return new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
-  @Get()
-  async get(@Req() req:any){
-    try{
-      let user = req.user;
-      return await this.gameService.getByHostId(user.uid);
-    }catch(error){
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
   @Get("byId")
-  async getById(@Query("id") id: string){
-    try{
+  async getById(@Query("id") id: string) {
+    try {
       return await this.gameService.getById(id);
-    }catch(error){
+    } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }
