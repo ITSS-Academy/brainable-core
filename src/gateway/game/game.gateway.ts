@@ -195,6 +195,8 @@ export class GameGateway {
         }
       }
 
+      console.log(question.answers);
+
       this.server.to(data.pin).emit("playerSubmittedAnswer");
     } catch (error) {
       console.log(error);
