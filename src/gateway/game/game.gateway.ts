@@ -9,6 +9,7 @@ import { Server, Socket } from "socket.io";
 
 interface Room {
   hostId: string;
+  isStarted: boolean;
   players: { [socketId: string]: string };
   questions: {
     questionId: string;
@@ -39,6 +40,7 @@ export class GameGateway {
   ): void {
     this.rooms[pin] = {
       hostId: client.id,
+      isStarted: false,
       players: {},
       questions: []
     };
@@ -53,12 +55,25 @@ export class GameGateway {
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
-      client.join(data.pin);
-      room.players[client.id] = data.username;
-      console.log(`${data.username} joined room ${data.pin}`);
-      this.server
-        .to(room.hostId)
-        .emit("guestJoined", { username: data.username });
+      if (room.isStarted !== true) {
+
+      for (const player in room.players) {
+        if (room.players[player] === data.username) {
+          client.emit("error", "Username already exists in the room");
+          return;
+        }
+      }
+        client.join(data.pin);
+        room.players[client.id] = data.username;
+        console.log(`${data.username} joined room ${data.pin}`);
+        this.server
+            .to(room.hostId)
+            .emit("guestJoined", {username: data.username});
+        client.emit("clientGuessJoined","Guest joined room");
+      }else {
+        client.emit("error", "Game has already started");
+      }
+
     } else {
       client.emit("error", "Room not found");
     }
@@ -73,8 +88,13 @@ export class GameGateway {
     if (!room) {
       client.emit("error", "Room not found");
     } else {
-      this.server.to(client.id).emit("navigateToEnterName");
-      console.log(`Room ${pin} exists`);
+      if (room.isStarted == true) {
+        client.emit("error", "Game has already started");
+      }else {
+        console.log(room)
+        this.server.to(client.id).emit("navigateToEnterName");
+        console.log(`Room ${pin} exists`);
+      }
     }
   }
 
@@ -83,7 +103,9 @@ export class GameGateway {
     @MessageBody() pin: string,
     @ConnectedSocket() client: Socket
   ): void {
-    const room = this.rooms[pin];
+    let room = this.rooms[pin];
+    this.rooms[pin].isStarted = true;
+
     if (room && room.hostId === client.id) {
       this.server.to(pin).emit("navigateToCountDown");
       console.log(`Game started in room ${pin}`);
@@ -173,7 +195,13 @@ export class GameGateway {
       question.answers[data.playerName].time = data.time;
 
       if (question.correctAnswer === data.answer) {
-        const newScore = Math.round((1 / data.time) * 100000);
+        // const newScore = Math.round((1 / data.time) * 100000);
+        let newScore = 0;
+        if (data.time <= 500) {
+            newScore = 1000;
+        }else {
+          newScore = (1 - ((data.time / 10000) / 2)) * 1000;
+        }
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = newScore;
         } else {

@@ -8,7 +8,7 @@ import {
   Param,
   Post,
   Put,
-  Req
+  Req, UploadedFiles, UseInterceptors
 } from "@nestjs/common";
 
 import { DecodedIdToken } from "firebase-admin/lib/auth";
@@ -16,6 +16,7 @@ import { CreateQuizDto } from "../../models/create-quiz.dto";
 import { Quiz } from "../../../db/src/entity/Quiz";
 import { QuizService } from "./quiz.service";
 import { UpdateQuizDto } from "../../models/update-quiz.dto";
+import {FilesInterceptor} from "@nestjs/platform-express";
 
 @Controller("quiz")
 export class QuizController {
@@ -23,6 +24,7 @@ export class QuizController {
   }
 
   @Post()
+  @UseInterceptors(FilesInterceptor('imageUrl'))
   async createQuiz(@Req() req: any, @Body() quizDto: CreateQuizDto) {
     try {
       let authData = req.user as DecodedIdToken;
