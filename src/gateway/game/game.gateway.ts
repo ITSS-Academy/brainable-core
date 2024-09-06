@@ -8,8 +8,10 @@ import {
 import { Server, Socket } from "socket.io";
 
 interface Room {
+
   hostId: string;
   players: { [socketId: string]: string };
+  gameStarted: boolean;
   questions: {
     questionId: string;
     correctAnswer: number;
@@ -22,6 +24,8 @@ interface Room {
     };
 
   }[];
+  currentQuestionIndex: number;
+  leaderboard: { playerName: string; score: number }[];
 }
 
 @WebSocketGateway({ cors: true })
@@ -32,6 +36,8 @@ export class GameGateway {
   private rooms: { [pin: string]: Room } = {};
   private currentQuestion: number = 0;
 
+
+
   @SubscribeMessage("createRoom")
   handleCreateRoom(
     @MessageBody() pin: string,
@@ -40,7 +46,10 @@ export class GameGateway {
     this.rooms[pin] = {
       hostId: client.id,
       players: {},
-      questions: []
+      questions: [],
+      gameStarted: false,
+      currentQuestionIndex: 0,
+      leaderboard: []
     };
     client.join(pin);
     console.log(`Room ${pin} created by host ${client.id}`);
@@ -53,12 +62,22 @@ export class GameGateway {
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
+      if (this.currentQuestion > 0) {
+        client.emit('error', 'Game already started, you cannot join now.');
+        return;
+      }
       client.join(data.pin);
       room.players[client.id] = data.username;
       console.log(`${data.username} joined room ${data.pin}`);
       this.server
         .to(room.hostId)
         .emit("guestJoined", { username: data.username });
+      if (Object.values(room.players).filter((name) => name === data.username).length > 1) {
+        client.emit("error", "Duplicate player name");
+        delete room.players[client.id];
+        client.leave(data.pin);
+        return;
+      }
     } else {
       client.emit("error", "Room not found");
     }
@@ -68,11 +87,17 @@ export class GameGateway {
   handleCheckRoomExist(
     @MessageBody() pin: string,
     @ConnectedSocket() client: Socket
+
   ): void {
     const room = this.rooms[pin];
     if (!room) {
+
       client.emit("error", "Room not found");
     } else {
+      if (this.currentQuestion > 0) {
+        client.emit('error', 'Game already started, you cannot join now.');
+        return;
+      }
       this.server.to(client.id).emit("navigateToEnterName");
       console.log(`Room ${pin} exists`);
     }
@@ -84,7 +109,9 @@ export class GameGateway {
     @ConnectedSocket() client: Socket
   ): void {
     const room = this.rooms[pin];
+    this.rooms[pin].gameStarted = true;
     if (room && room.hostId === client.id) {
+      room.gameStarted = true;
       this.server.to(pin).emit("navigateToCountDown");
       console.log(`Game started in room ${pin}`);
     } else {
@@ -138,6 +165,7 @@ export class GameGateway {
     }
   }
 
+
   @SubscribeMessage("sendAnswer")
   handleSendAnswer(
     @MessageBody()
@@ -173,7 +201,7 @@ export class GameGateway {
       question.answers[data.playerName].time = data.time;
 
       if (question.correctAnswer === data.answer) {
-        const newScore = Math.round((1 / data.time) * 100000);
+        const newScore = Math.round(10000 / data.time);
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = newScore;
         } else {
@@ -194,7 +222,7 @@ export class GameGateway {
           question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName]?.score || 0;
         }
       }
-
+      this.updateLeaderboard(room);
       console.log(question.answers);
 
       this.server.to(data.pin).emit("playerSubmittedAnswer");
@@ -203,6 +231,22 @@ export class GameGateway {
       client.emit("error", "An error occurred while processing the answer");
     }
   }
+
+//   @SubscribeMessage("sendAnswer")
+  private updateLeaderboard(room: Room): void {
+    const scores: { [playerName: string]: number } = {};
+
+    room.questions.forEach((question) => {
+      Object.entries(question.answers).forEach(([playerName, answerData]) => {
+        scores[playerName] = answerData.score;
+      });
+    });
+
+    room.leaderboard = Object.entries(scores)
+      .map(([playerName, score]) => ({ playerName, score }))
+      .sort((a, b) => b.score - a.score);
+  }
+
 
   @SubscribeMessage("nextQuestion")
   handleNextQuestion(
