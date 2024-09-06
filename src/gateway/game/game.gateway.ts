@@ -10,6 +10,7 @@ import { Server, Socket } from "socket.io";
 interface Room {
 
   hostId: string;
+  isStarted: boolean;
   players: { [socketId: string]: string };
   gameStarted: boolean;
   questions: {
@@ -45,6 +46,7 @@ export class GameGateway {
   ): void {
     this.rooms[pin] = {
       hostId: client.id,
+      isStarted: false,
       players: {},
       questions: [],
       gameStarted: false,
@@ -62,22 +64,25 @@ export class GameGateway {
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
-      if (this.currentQuestion > 0) {
-        client.emit('error', 'Game already started, you cannot join now.');
-        return;
+      if (room.isStarted !== true) {
+
+      for (const player in room.players) {
+        if (room.players[player] === data.username) {
+          client.emit("error", "Username already exists in the room");
+          return;
+        }
       }
-      client.join(data.pin);
-      room.players[client.id] = data.username;
-      console.log(`${data.username} joined room ${data.pin}`);
-      this.server
-        .to(room.hostId)
-        .emit("guestJoined", { username: data.username });
-      if (Object.values(room.players).filter((name) => name === data.username).length > 1) {
-        client.emit("error", "Duplicate player name");
-        delete room.players[client.id];
-        client.leave(data.pin);
-        return;
+        client.join(data.pin);
+        room.players[client.id] = data.username;
+        console.log(`${data.username} joined room ${data.pin}`);
+        this.server
+            .to(room.hostId)
+            .emit("guestJoined", {username: data.username});
+        client.emit("clientGuessJoined","Guest joined room");
+      }else {
+        client.emit("error", "Game has already started");
       }
+
     } else {
       client.emit("error", "Room not found");
     }
@@ -94,12 +99,13 @@ export class GameGateway {
 
       client.emit("error", "Room not found");
     } else {
-      if (this.currentQuestion > 0) {
-        client.emit('error', 'Game already started, you cannot join now.');
-        return;
+      if (room.isStarted == true) {
+        client.emit("error", "Game has already started");
+      }else {
+        console.log(room)
+        this.server.to(client.id).emit("navigateToEnterName");
+        console.log(`Room ${pin} exists`);
       }
-      this.server.to(client.id).emit("navigateToEnterName");
-      console.log(`Room ${pin} exists`);
     }
   }
 
@@ -108,8 +114,9 @@ export class GameGateway {
     @MessageBody() pin: string,
     @ConnectedSocket() client: Socket
   ): void {
-    const room = this.rooms[pin];
-    this.rooms[pin].gameStarted = true;
+    let room = this.rooms[pin];
+    this.rooms[pin].isStarted = true;
+
     if (room && room.hostId === client.id) {
       room.gameStarted = true;
       this.server.to(pin).emit("navigateToCountDown");
@@ -201,7 +208,13 @@ export class GameGateway {
       question.answers[data.playerName].time = data.time;
 
       if (question.correctAnswer === data.answer) {
-        const newScore = Math.round(10000 / data.time);
+        // const newScore = Math.round((1 / data.time) * 100000);
+        let newScore = 0;
+        if (data.time <= 500) {
+            newScore = 1000;
+        }else {
+          newScore = (1 - ((data.time / 10000) / 2)) * 1000;
+        }
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = newScore;
         } else {
