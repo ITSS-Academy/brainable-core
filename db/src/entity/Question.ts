@@ -18,7 +18,8 @@ export class Question {
     option3: string,
     option4: string,
     imgUrl: string,
-    timeLimit: number
+    timeLimit: number,
+    points: number
   ) {
     this.question = question;
     this.answer = answer;
@@ -28,6 +29,7 @@ export class Question {
     this.option4 = option4;
     this.imgUrl = imgUrl;
     this.timeLimit = timeLimit;
+    this.points = points;
   }
 
   @PrimaryGeneratedColumn("uuid")
@@ -53,6 +55,9 @@ export class Question {
 
   @Column()
   timeLimit: number;
+
+  @Column()
+  points: number;
 
   @Column()
   imgUrl: string;
