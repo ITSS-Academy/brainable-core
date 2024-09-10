@@ -6,5 +6,6 @@ export interface QuestionModel {
   option3: string;
   option4: string;
   timeLimit: number;
+  points: number;
   quizId: string;
 }
