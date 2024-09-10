@@ -8,6 +8,7 @@ import {
 import { Server, Socket } from "socket.io";
 
 interface Room {
+
   hostId: string;
   isStarted: boolean;
   players: { [socketId: string]: string };
@@ -44,7 +45,7 @@ export class GameGateway {
         hostId: client.id,
         isStarted: false,
         players: {},
-        questions: []
+        questions: [],
     }
     client.join(pin);
     console.log(`Room ${pin} created by host ${client.id}`);
@@ -58,7 +59,6 @@ export class GameGateway {
     const room = this.rooms[data.pin];
     if (room) {
       if (room.isStarted !== true) {
-
       for (const player in room.players) {
         if (room.players[player] === data.username) {
           client.emit("error", "Username already exists in the room");
@@ -79,12 +79,14 @@ export class GameGateway {
     } else {
       client.emit("error", "Room not found");
     }
+
   }
 
   @SubscribeMessage("checkRoomExist")
   handleCheckRoomExist(
     @MessageBody() pin: string,
     @ConnectedSocket() client: Socket
+
   ): void {
     const room = this.rooms[pin];
     if (!room) {
@@ -167,6 +169,7 @@ export class GameGateway {
     }
   }
 
+
   @SubscribeMessage("sendAnswer")
   handleSendAnswer(
     @MessageBody()
@@ -229,7 +232,6 @@ export class GameGateway {
           question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName]?.score || 0;
         }
       }
-
       console.log(question.answers);
 
       this.server.to(data.pin).emit("playerSubmittedAnswer");
@@ -238,6 +240,8 @@ export class GameGateway {
       client.emit("error", "An error occurred while processing the answer");
     }
   }
+
+
 
   @SubscribeMessage("nextQuestion")
   handleNextQuestion(
@@ -268,6 +272,7 @@ export class GameGateway {
       console.log("Unauthorized: Only the host can start the countdown.");
       client.emit("error", "Only the host can start the countdown.");
     }
+
   }
 
   @SubscribeMessage("showResults")
@@ -380,6 +385,10 @@ export class GameGateway {
       console.log("Unauthorized: Only the host can end the game.");
       client.emit("error", "Only the host can end the game.");
     }
+
+    // delete player Leave room
+
+
   }
 
   calculateLeaderboard(room: Room) {
@@ -397,6 +406,8 @@ export class GameGateway {
     return Object.entries(scores)
       .map(([playerName, score]) => ({ playerName, score: Math.round(score) }))
       .sort((a, b) => b.score - a.score);
+
+    this.server.to(room.hostId).emit("calculateLeaderboard", scores);
   }
 
   @SubscribeMessage("getLastQuestionScore")
@@ -460,6 +471,11 @@ export class GameGateway {
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
+
+    client.on('logout', () => {
+      console.log(`Client logged out: ${client.id}`);
+      this.handleDisconnect(client);
+    });
   }
 
   handleDisconnect(client: Socket) {
@@ -467,11 +483,14 @@ export class GameGateway {
     for (const pin in this.rooms) {
       const room = this.rooms[pin];
       if (room.hostId === client.id) {
+
         delete this.rooms[pin];
         this.server.to(pin).emit("error", "Host has left the game");
         this.server.in(pin).socketsLeave(pin); // Kick all players out of the room
         this.currentQuestion = 0;
+        delete this.rooms[pin];
         console.log(`Room ${pin} deleted because host disconnected`);
+
       } else if (room.players[client.id]) {
         const username = room.players[client.id];
         // delete room.players[client.id];
@@ -479,6 +498,9 @@ export class GameGateway {
 
         console.log(`${username} left room ${pin}`);
       }
+      client.join(pin);
+      console.log(`Room ${pin} created by host ${client.id}`);
+
     }
   }
 }

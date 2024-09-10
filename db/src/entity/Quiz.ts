@@ -40,7 +40,6 @@ export class Quiz {
   @Column()
   imgUrl: string;
 
-
   @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 
