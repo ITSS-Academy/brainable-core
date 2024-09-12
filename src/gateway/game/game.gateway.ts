@@ -18,7 +18,7 @@ interface Room {
     timeLimit: number;
     points: number;
     answers: {
-      [playerName: string]: {
+      [playerId: string]: {
         answer: number,
         time: number,
         score: number
@@ -59,12 +59,6 @@ export class GameGateway {
     const room = this.rooms[data.pin];
     if (room) {
       if (room.isStarted !== true) {
-      for (const player in room.players) {
-        if (room.players[player] === data.username) {
-          client.emit("error", "Username already exists in the room");
-          return;
-        }
-      }
         client.join(data.pin);
         room.players[client.id] = data.username;
         console.log(`${data.username} joined room ${data.pin}`);
@@ -96,7 +90,7 @@ export class GameGateway {
         client.emit("error", "Game has already started");
       }else {
         console.log(room)
-        this.server.to(client.id).emit("navigateToEnterName");
+        this.server.to(client.id).emit("navigateToEnterName",client.id);
         console.log(`Room ${pin} exists`);
       }
     }
@@ -126,7 +120,6 @@ export class GameGateway {
   ): void {
     const room = this.rooms[pin];
     if (room && room.hostId === client.id) {
-      console.log("1231231231231231123123123123123123123jjjjjjjjjjjjjjjjjj")
       this.server.to(pin).emit("chooseAnswer");
       console.log(`Countdown started in room ${pin}`);
     } else {
@@ -210,7 +203,7 @@ export class GameGateway {
         if (data.time <= 500) {
             newScore = 1000;
         }else {
-          newScore = ((1 - ((data.time / (room.questions[this.currentQuestion].timeLimit * 1000)) / 2)) * 1000) * room.questions[this.currentQuestion].points;
+          newScore = Math.round(((1 - ((data.time / (room.questions[this.currentQuestion].timeLimit * 1000)) / 2)) * 1000) * room.questions[this.currentQuestion].points);
         }
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = newScore;
@@ -292,13 +285,12 @@ export class GameGateway {
         (q) => q.questionId == data.questionId
       );
       for (let player in room.players) {
-        let playerName = room.players[player];
-        if (question.answers[playerName] == null) {
-          console.log("Player", playerName, "not found in question");
-          question.answers[playerName] = {
+        if (question.answers[player] == null) {
+          console.log("Player", player, "not found in question");
+          question.answers[player] = {
             answer: 0,
             time: 0,
-            score: room.questions[this.currentQuestion - 1].answers[playerName]?.score || 0
+            score: room.questions[this.currentQuestion - 1].answers[player]?.score || 0
           };
         }
       }
@@ -313,8 +305,8 @@ export class GameGateway {
         correctAnswer: question.correctAnswer
       });
       for (let player in room.players) {
-        let playerName = room.players[player];
-        this.server.to(player).emit("showScore",question.answers[playerName].score);
+
+        this.server.to(player).emit("showScore",question.answers[player].score);
         // question.answers[playerName].score;
       }
     } else {
@@ -387,25 +379,35 @@ export class GameGateway {
     }
 
     // delete player Leave room
-
-
   }
 
   calculateLeaderboard(room: Room) {
-    const scores: { [playerName: string]: number } = {};
+    // get player name
+
+    const scores: { [playerId: string]:{
+        playerName: string,
+        score: number
+      } } = {};
 
     room.questions.forEach((question) => {
-      Object.entries(question.answers).forEach(([playerName, answerData]) => {
+      Object.entries(question.answers).forEach(([playerId, answerData]) => {
+        let playName = room.players[playerId];
         // Update the player's score with the score from the last question
-        scores[playerName] = answerData.score;
+        scores[playerId] = {
+            playerName: playName,
+          score: answerData.score
+        };
       });
     });
     console.log(scores);
 
     // Sort the leaderboard by score in descending order and round the results
-    return Object.entries(scores)
-      .map(([playerName, score]) => ({ playerName, score: Math.round(score) }))
-      .sort((a, b) => b.score - a.score);
+    let sortedScore = Object.entries(scores)
+        .map(([playerId, { playerName, score }]) => ({ playerName, score: Math.round(score) }))
+        .sort((a, b) => b.score - a.score);
+
+    console.log(sortedScore);
+    return sortedScore;
 
     this.server.to(room.hostId).emit("calculateLeaderboard", scores);
   }
@@ -417,6 +419,8 @@ export class GameGateway {
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
+      console.log(room)
+      console.log("before Room")
       const results = this.getLastQuestionScore(room, data.gameId);
       console.log(results);
       this.server.to(room.hostId).emit("lastQuestionScore", results);

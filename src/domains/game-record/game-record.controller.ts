@@ -36,7 +36,7 @@ export class GameRecordController {
       );
       await this.gameRecord.create(gameRecord);
     } catch (error) {
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
