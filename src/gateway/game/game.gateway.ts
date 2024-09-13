@@ -33,6 +33,11 @@ export class GameGateway {
   @WebSocketServer()
   server: Server;
 
+  private score: {[playerId: string]:{
+        playerName: string,
+        score: number
+  }};
+
   private rooms: { [pin: string]: Room } = {};
   private currentQuestion: number = 0;
 
@@ -324,7 +329,8 @@ export class GameGateway {
     if (room && room.hostId === client.id) {
       // show top 10 score in room
       let leaderboard = this.calculateLeaderboard(room);
-      // if (leaderboard.length > 5) {
+      // if (leaderboard
+      // .length > 5) {
       //   leaderboard = leaderboard.slice(0, 5);
       // }
       this.server.to(room.hostId).emit("leaderboardTop5", leaderboard);
@@ -412,6 +418,51 @@ export class GameGateway {
     this.server.to(room.hostId).emit("calculateLeaderboard", scores);
   }
 
+  @SubscribeMessage("sendRanking")
+  handleSendRanking(
+    @MessageBody() pin: string,
+  ) {
+    let room = this.rooms[pin];
+    const scores: { [playerId: string]:{
+        playerName: string,
+        score: number
+      } } = {};
+
+    console.log("send rankiiiiiii")
+    // get player name
+    room.questions.forEach((question) => {
+      Object.entries(question.answers).forEach(([playerId, answerData]) => {
+        let playName = room.players[playerId];
+        // Update the player's score with the score from the last question
+        scores[playerId] = {
+          playerName: playName,
+          score: answerData.score
+        };
+      });
+    });
+    console.log(scores);
+
+// Sort the leaderboard by score in descending order and round the results
+    let sortedScore = Object.entries(scores)
+        .map(([playerId, { playerName, score }]) => ({ playerId, playerName, score: Math.round(score) }))
+        .sort((a, b) => b.score - a.score);
+
+// Convert sorted array back to an object with playerId as the key
+    this.score = {};
+    sortedScore.forEach(({ playerId, playerName, score }) => {
+      this.score[playerId] = { playerName, score };
+    });
+
+
+    console.log("this Score",this.score);
+    let rank = 1;
+    for (let i in this.score) {
+      console.log(i)
+      this.server.to(i).emit("sendRanking", {rank: rank, score: this.score[i].score});
+      rank++
+    }
+  }
+
   @SubscribeMessage("getLastQuestionScore")
   handleGetLastQuestionScore(
     @MessageBody() data: { pin: string, gameId: string },
@@ -472,6 +523,9 @@ export class GameGateway {
     return results;
   }
 
+  // handleRanking(){
+  //
+  // }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
