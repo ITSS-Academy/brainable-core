@@ -100,7 +100,7 @@ export class GameGateway {
         client.emit("error", "Game has already started");
       }else {
         console.log(room)
-        this.server.to(client.id).emit("navigateToEnterName");
+        this.server.to(client.id).emit("navigateToEnterName" , client.id);
         console.log(`Room ${pin} exists`);
       }
     }
@@ -242,16 +242,14 @@ export class GameGateway {
     }
   }
 
-//   @SubscribeMessage("sendAnswer")
+//@SubscribeMessage("sendAnswer")
   private updateLeaderboard(room: Room): void {
     const scores: { [playerName: string]: number } = {};
-
     room.questions.forEach((question) => {
       Object.entries(question.answers).forEach(([playerName, answerData]) => {
         scores[playerName] = answerData.score;
       });
     });
-
     room.leaderboard = Object.entries(scores)
       .map(([playerName, score]) => ({ playerName, score }))
       .sort((a, b) => b.score - a.score);

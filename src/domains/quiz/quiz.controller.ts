@@ -57,6 +57,7 @@ export class QuizController {
   @Get(":id")
   async getQuizById(@Param("id") id: string) {
     try {
+
       return await this.quizService.getById(id);
     } catch (error) {
       return new HttpException(error.message, HttpStatus.BAD_REQUEST);

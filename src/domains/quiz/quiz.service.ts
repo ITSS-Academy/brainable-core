@@ -25,7 +25,8 @@ export class QuizService {
     const newQuiz = await AppDataSource.manager.save(Quiz, {
       ...quiz.quiz,
       authorId: author,
-      questions: []
+      questions: [],
+
     });
     // await this.searchService.indexQuiz(newQuiz);
 
@@ -100,7 +101,8 @@ export class QuizService {
       description: quiz.quiz.description,
       isPublic: quiz.quiz.isPublic,
       imgUrl: quiz.quiz.imgUrl,
-      category: quiz.quiz.category
+      category: quiz.quiz.category,
+
     });
 
 
