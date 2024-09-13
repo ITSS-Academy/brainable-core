@@ -14,7 +14,7 @@ export class QuizService {
 
   async create(quiz: CreateQuizDto, authorId: string) {
     let author = await AppDataSource.manager.findOne(Profile, {
-      where: { uid: authorId }
+          where: { uid: authorId }
     });
     if (!author) {
       throw new Error("Author not found");

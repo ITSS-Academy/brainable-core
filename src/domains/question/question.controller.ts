@@ -33,7 +33,7 @@ export class QuestionController {
               question.option4,
               question.imgUrl,
               question.timeLimit,
-              question.points
+                question.points,
             )
           };
         }
@@ -75,3 +75,4 @@ export class QuestionController {
     }
   }
 }
+

@@ -38,6 +38,7 @@ export class QuizController {
           quizDto.quiz.questions
         )
       };
+      console.log(quiz);
       await this.quizService.create(quiz, authData.uid);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

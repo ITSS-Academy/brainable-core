@@ -12,12 +12,13 @@ interface Room {
   hostId: string;
   isStarted: boolean;
   players: { [socketId: string]: string };
-  gameStarted: boolean;
   questions: {
     questionId: string;
     correctAnswer: number;
+    timeLimit: number;
+    points: number;
     answers: {
-      [playerName: string]: {
+      [playerId: string]: {
         answer: number,
         time: number,
         score: number
@@ -25,8 +26,6 @@ interface Room {
     };
 
   }[];
-  currentQuestionIndex: number;
-  leaderboard: { playerName: string; score: number }[];
 }
 
 @WebSocketGateway({ cors: true })
@@ -34,12 +33,17 @@ export class GameGateway {
   @WebSocketServer()
   server: Server;
 
+  private score: {[playerId: string]:{
+      playerName: string,
+      score: number
+    }};
+
   private rooms: { [pin: string]: Room } = {};
   private currentQuestion: number = 0;
 
   @SubscribeMessage("createRoom")
   handleCreateRoom(
-    @MessageBody() pin: string,
+    @MessageBody() pin: string, data: string,
     @ConnectedSocket() client: Socket
   ): void {
     this.rooms[pin] = {
@@ -47,10 +51,7 @@ export class GameGateway {
       isStarted: false,
       players: {},
       questions: [],
-      gameStarted: false,
-      currentQuestionIndex: 0,
-      leaderboard: []
-    };
+    }
     client.join(pin);
     console.log(`Room ${pin} created by host ${client.id}`);
   }
@@ -63,18 +64,12 @@ export class GameGateway {
     const room = this.rooms[data.pin];
     if (room) {
       if (room.isStarted !== true) {
-      for (const player in room.players) {
-        if (room.players[player] === data.username) {
-          client.emit("error", "Username already exists in the room");
-          return;
-        }
-      }
         client.join(data.pin);
         room.players[client.id] = data.username;
         console.log(`${data.username} joined room ${data.pin}`);
         this.server
-            .to(room.hostId)
-            .emit("guestJoined", {username: data.username});
+          .to(room.hostId)
+          .emit("guestJoined", {username: data.username});
         client.emit("clientGuessJoined","Guest joined room");
       }else {
         client.emit("error", "Game has already started");
@@ -100,7 +95,7 @@ export class GameGateway {
         client.emit("error", "Game has already started");
       }else {
         console.log(room)
-        this.server.to(client.id).emit("navigateToEnterName" , client.id);
+        this.server.to(client.id).emit("navigateToEnterName",client.id);
         console.log(`Room ${pin} exists`);
       }
     }
@@ -115,7 +110,6 @@ export class GameGateway {
     this.rooms[pin].isStarted = true;
 
     if (room && room.hostId === client.id) {
-      room.gameStarted = true;
       this.server.to(pin).emit("navigateToCountDown");
       console.log(`Game started in room ${pin}`);
     } else {
@@ -146,6 +140,8 @@ export class GameGateway {
       pin: string;
       questionId: string;
       correctAnswer: number;
+      points: number;
+      timeLimit: number;
     },
     @ConnectedSocket() client: Socket
   ): void {
@@ -155,7 +151,9 @@ export class GameGateway {
       room.questions.push({
         questionId: data.questionId,
         correctAnswer: data.correctAnswer,
-        answers: {}
+        points: data.points,
+        timeLimit: data.timeLimit,
+        answers: {},
       });
 
       // Gửi câu hỏi cho tất cả người chơi
@@ -208,9 +206,9 @@ export class GameGateway {
         // const newScore = Math.round((1 / data.time) * 100000);
         let newScore = 0;
         if (data.time <= 500) {
-            newScore = 1000;
+          newScore = 1000;
         }else {
-          newScore = (1 - ((data.time / 10000) / 2)) * 1000;
+          newScore = Math.round(((1 - ((data.time / (room.questions[this.currentQuestion].timeLimit * 1000)) / 2)) * 1000) * room.questions[this.currentQuestion].points);
         }
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = newScore;
@@ -232,7 +230,6 @@ export class GameGateway {
           question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName]?.score || 0;
         }
       }
-      this.updateLeaderboard(room);
       console.log(question.answers);
 
       this.server.to(data.pin).emit("playerSubmittedAnswer");
@@ -242,18 +239,6 @@ export class GameGateway {
     }
   }
 
-//@SubscribeMessage("sendAnswer")
-  private updateLeaderboard(room: Room): void {
-    const scores: { [playerName: string]: number } = {};
-    room.questions.forEach((question) => {
-      Object.entries(question.answers).forEach(([playerName, answerData]) => {
-        scores[playerName] = answerData.score;
-      });
-    });
-    room.leaderboard = Object.entries(scores)
-      .map(([playerName, score]) => ({ playerName, score }))
-      .sort((a, b) => b.score - a.score);
-  }
 
 
   @SubscribeMessage("nextQuestion")
@@ -297,12 +282,23 @@ export class GameGateway {
     },
     @ConnectedSocket() client: Socket
   ): void {
+    console.log("1231231232141203kjasndfkjndsakjnsckvjnzxckjvn")
     const room = this.rooms[data.pin];
     if (room && room.hostId === client.id) {
       // Tìm câu hỏi trong danh sách
       const question = room.questions.find(
         (q) => q.questionId == data.questionId
       );
+      for (let player in room.players) {
+        if (question.answers[player] == null) {
+          console.log("Player", player, "not found in question");
+          question.answers[player] = {
+            answer: 0,
+            time: 0,
+            score: room.questions[this.currentQuestion - 1].answers[player]?.score || 0
+          };
+        }
+      }
       // Gửi thống kê số lượng người chơi chọn từng đáp án về cho host
       const answerStatistics = this.calculateAnswerStatistics(question);
       this.server.to(room.hostId).emit("answerStatistics", {
@@ -313,6 +309,11 @@ export class GameGateway {
       this.server.to(data.pin).emit("correctAnswer", {
         correctAnswer: question.correctAnswer
       });
+      for (let player in room.players) {
+
+        this.server.to(player).emit("showScore",question.answers[player].score);
+        // question.answers[playerName].score;
+      }
     } else {
       console.log("Unauthorized: Only the host can show the result.");
       client.emit("error", "Only the host can show the result.");
@@ -328,7 +329,8 @@ export class GameGateway {
     if (room && room.hostId === client.id) {
       // show top 10 score in room
       let leaderboard = this.calculateLeaderboard(room);
-      // if (leaderboard.length > 5) {
+      // if (leaderboard
+      // .length > 5) {
       //   leaderboard = leaderboard.slice(0, 5);
       // }
       this.server.to(room.hostId).emit("leaderboardTop5", leaderboard);
@@ -383,27 +385,82 @@ export class GameGateway {
     }
 
     // delete player Leave room
-
-
   }
 
   calculateLeaderboard(room: Room) {
-    const scores: { [playerName: string]: number } = {};
+    // get player name
+
+    const scores: { [playerId: string]:{
+        playerName: string,
+        score: number
+      } } = {};
 
     room.questions.forEach((question) => {
-      Object.entries(question.answers).forEach(([playerName, answerData]) => {
+      Object.entries(question.answers).forEach(([playerId, answerData]) => {
+        let playName = room.players[playerId];
         // Update the player's score with the score from the last question
-        scores[playerName] = answerData.score;
+        scores[playerId] = {
+          playerName: playName,
+          score: answerData.score
+        };
       });
     });
     console.log(scores);
 
     // Sort the leaderboard by score in descending order and round the results
-    return Object.entries(scores)
-      .map(([playerName, score]) => ({ playerName, score: Math.round(score) }))
+    let sortedScore = Object.entries(scores)
+      .map(([playerId, { playerName, score }]) => ({ playerName, score: Math.round(score) }))
       .sort((a, b) => b.score - a.score);
 
+    console.log(sortedScore);
+    return sortedScore;
+
     this.server.to(room.hostId).emit("calculateLeaderboard", scores);
+  }
+
+  @SubscribeMessage("sendRanking")
+  handleSendRanking(
+    @MessageBody() pin: string,
+  ) {
+    let room = this.rooms[pin];
+    const scores: { [playerId: string]:{
+        playerName: string,
+        score: number
+      } } = {};
+
+    console.log("send rankiiiiiii")
+    // get player name
+    room.questions.forEach((question) => {
+      Object.entries(question.answers).forEach(([playerId, answerData]) => {
+        let playName = room.players[playerId];
+        // Update the player's score with the score from the last question
+        scores[playerId] = {
+          playerName: playName,
+          score: answerData.score
+        };
+      });
+    });
+    console.log(scores);
+
+// Sort the leaderboard by score in descending order and round the results
+    let sortedScore = Object.entries(scores)
+      .map(([playerId, { playerName, score }]) => ({ playerId, playerName, score: Math.round(score) }))
+      .sort((a, b) => b.score - a.score);
+
+// Convert sorted array back to an object with playerId as the key
+    this.score = {};
+    sortedScore.forEach(({ playerId, playerName, score }) => {
+      this.score[playerId] = { playerName, score };
+    });
+
+
+    console.log("this Score",this.score);
+    let rank = 1;
+    for (let i in this.score) {
+      console.log(i)
+      this.server.to(i).emit("sendRanking", {rank: rank, score: this.score[i].score});
+      rank++
+    }
   }
 
   @SubscribeMessage("getLastQuestionScore")
@@ -413,6 +470,8 @@ export class GameGateway {
   ): void {
     const room = this.rooms[data.pin];
     if (room) {
+      console.log(room)
+      console.log("before Room")
       const results = this.getLastQuestionScore(room, data.gameId);
       console.log(results);
       this.server.to(room.hostId).emit("lastQuestionScore", results);
@@ -464,6 +523,9 @@ export class GameGateway {
     return results;
   }
 
+  // handleRanking(){
+  //
+  // }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -489,8 +551,9 @@ export class GameGateway {
 
       } else if (room.players[client.id]) {
         const username = room.players[client.id];
-        delete room.players[client.id];
+        // delete room.players[client.id];
         this.server.to(room.hostId).emit("guestLeft", { username });
+
         console.log(`${username} left room ${pin}`);
       }
       client.join(pin);

@@ -6,9 +6,11 @@ import { GameRecord } from "db/src/entity/GameRecord";
 @Injectable()
 export class GameRecordService {
   async create(gameRecords: { gameRecord: GameRecord }[]) {
-    for (const gameRecordDto of gameRecords) {
-      await AppDataSource.manager.save(gameRecordDto.gameRecord);
-    }
+    console.log("Creating game records", gameRecords);
+    const gameRecordPromises = gameRecords.map(async gameRecord => {
+      return await AppDataSource.manager.save(GameRecord, gameRecord.gameRecord);
+    });
+    await Promise.all(gameRecordPromises);
   }
 
   async getById(id: string) {
