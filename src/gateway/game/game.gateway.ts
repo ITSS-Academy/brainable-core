@@ -34,9 +34,9 @@ export class GameGateway {
   server: Server;
 
   private score: {[playerId: string]:{
-        playerName: string,
-        score: number
-  }};
+      playerName: string,
+      score: number
+    }};
 
   private rooms: { [pin: string]: Room } = {};
   private currentQuestion: number = 0;
@@ -47,10 +47,10 @@ export class GameGateway {
     @ConnectedSocket() client: Socket
   ): void {
     this.rooms[pin] = {
-        hostId: client.id,
-        isStarted: false,
-        players: {},
-        questions: [],
+      hostId: client.id,
+      isStarted: false,
+      players: {},
+      questions: [],
     }
     client.join(pin);
     console.log(`Room ${pin} created by host ${client.id}`);
@@ -69,8 +69,8 @@ export class GameGateway {
         room.players[playerId] = data.username;
         console.log(`${data.username} joined room ${data.pin}`);
         this.server
-            .to(room.hostId)
-            .emit("guestJoined", {username: data.username});
+          .to(room.hostId)
+          .emit("guestJoined", {username: data.username});
         client.emit("clientGuessJoined","Guest joined room");
       }else {
         client.emit("error", "Game has already started");
@@ -211,7 +211,7 @@ export class GameGateway {
         // const newScore = Math.round((1 / data.time) * 100000);
         let newScore = 0;
         if (data.time <= 500) {
-            newScore = 1000;
+          newScore = 1000;
         }else {
           newScore = Math.round(((1 - ((data.time / (room.questions[this.currentQuestion].timeLimit * 1000)) / 2)) * 1000) * room.questions[this.currentQuestion].points);
         }
@@ -406,7 +406,7 @@ export class GameGateway {
         let playName = room.players[playerId];
         // Update the player's score with the score from the last question
         scores[playerId] = {
-            playerName: playName,
+          playerName: playName,
           score: answerData.score
         };
       });
@@ -415,8 +415,8 @@ export class GameGateway {
 
     // Sort the leaderboard by score in descending order and round the results
     let sortedScore = Object.entries(scores)
-        .map(([playerId, { playerName, score }]) => ({ playerName, score: Math.round(score) }))
-        .sort((a, b) => b.score - a.score);
+      .map(([playerId, { playerName, score }]) => ({ playerName, score: Math.round(score) }))
+      .sort((a, b) => b.score - a.score);
 
     console.log(sortedScore);
     return sortedScore;
@@ -450,8 +450,8 @@ export class GameGateway {
 
 // Sort the leaderboard by score in descending order and round the results
     let sortedScore = Object.entries(scores)
-        .map(([playerId, { playerName, score }]) => ({ playerId, playerName, score: Math.round(score) }))
-        .sort((a, b) => b.score - a.score);
+      .map(([playerId, { playerName, score }]) => ({ playerId, playerName, score: Math.round(score) }))
+      .sort((a, b) => b.score - a.score);
 
 // Convert sorted array back to an object with playerId as the key
     this.score = {};
