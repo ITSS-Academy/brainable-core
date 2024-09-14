@@ -30,7 +30,7 @@ export class GameRecord {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => Game, (game) => game.gameRecords)
+  @ManyToOne(() => Game, (game) => game.gameRecords, { onDelete: 'CASCADE' })
   @JoinColumn({ name: "gameId" })
   gameId: string;
 

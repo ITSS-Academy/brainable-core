@@ -29,7 +29,7 @@ export class Game {
   @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;
 
-  @ManyToOne(() => Quiz)
+  @ManyToOne(() => Quiz, { onDelete: 'CASCADE'}  )
   @JoinColumn({ name: "quizId" })
   quizId: Quiz;
 
