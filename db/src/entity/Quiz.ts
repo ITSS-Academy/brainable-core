@@ -31,7 +31,7 @@ export class Quiz {
   @Column()
   title: string;
 
-  @Column()
+  @Column({nullable: true})
   description: string;
 
   @Column()
@@ -53,9 +53,7 @@ export class Quiz {
   @OneToMany(() => Question, (question) => question.quizId, { cascade: true, onDelete: "CASCADE" })
   questions: Question[];
 
-  
-
-  @ManyToOne(() => Categories, (category) => category.uid)
+  @ManyToOne(() => Categories, (category) => category.uid, { nullable: true })
   @JoinColumn({ name: "categoryId" })
   category: string;
 }

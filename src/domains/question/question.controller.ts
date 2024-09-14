@@ -71,7 +71,7 @@ export class QuestionController {
     try {
       await this.questionService.delete(id);
     } catch (error) {
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 }

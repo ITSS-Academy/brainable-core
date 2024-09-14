@@ -58,6 +58,7 @@ export class QuizController {
   @Get(":id")
   async getQuizById(@Param("id") id: string) {
     try {
+
       return await this.quizService.getById(id);
     } catch (error) {
       return new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -67,10 +68,11 @@ export class QuizController {
   @Put()
   async updateQuiz(@Req() req: any, @Body() quizDTO: UpdateQuizDto) {
     try {
+      console.log(quizDTO);
       await this.quizService.update(quizDTO);
     } catch (error) {
       console.log(error);
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 

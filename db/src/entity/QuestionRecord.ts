@@ -34,7 +34,7 @@ export class QuestionRecord {
   @Column()
   gameId: string;
 
-  @ManyToOne(() => Question)
+  @ManyToOne(() => Question, (question) => question.id , { cascade: true, onDelete: "CASCADE" })
   @JoinColumn({ name: "questionId" })
   question: Question;
 
