@@ -61,11 +61,12 @@ export class GameGateway {
     @MessageBody() data: { pin: string; username: string },
     @ConnectedSocket() client: Socket
   ): void {
+    let playerId = String(client.id);
     const room = this.rooms[data.pin];
     if (room) {
       if (room.isStarted !== true) {
         client.join(data.pin);
-        room.players[client.id] = data.username;
+        room.players[playerId] = data.username;
         console.log(`${data.username} joined room ${data.pin}`);
         this.server
           .to(room.hostId)
@@ -153,7 +154,8 @@ export class GameGateway {
         correctAnswer: data.correctAnswer,
         points: data.points,
         timeLimit: data.timeLimit,
-        answers: {},
+        answers: {
+        },
       });
 
       // Gửi câu hỏi cho tất cả người chơi
@@ -181,6 +183,7 @@ export class GameGateway {
     @ConnectedSocket() client: Socket
   ): void {
     try {
+
       const room = this.rooms[data.pin];
       if (!room) {
         client.emit("error", "Room not found");
@@ -198,6 +201,8 @@ export class GameGateway {
       if (!question.answers[data.playerName]) {
         question.answers[data.playerName] = { answer: 0, time: 0, score: 0 };
       }
+      console.log(client.id);
+      console.log(question.answers[data.playerName]);
 
       question.answers[data.playerName].answer = data.answer;
       question.answers[data.playerName].time = data.time;
@@ -228,10 +233,17 @@ export class GameGateway {
           question.answers[data.playerName].score = 0;
         } else {
           question.answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName]?.score || 0;
+
         }
       }
       console.log(question.answers);
-
+      console.log("final test")
+      console.log(question.answers[data.playerName].answer);
+      if (question.answers[data.playerName].answer == 0 && this.currentQuestion > 0) {
+        console.log(room.questions[this.currentQuestion - 1].answers[data.playerName].score);
+        this.rooms[data.pin].questions[this.currentQuestion].answers[data.playerName].score = room.questions[this.currentQuestion - 1].answers[data.playerName].score ;
+        console.log(this.rooms[data.pin].questions[this.currentQuestion].answers[data.playerName]);
+      }
       this.server.to(data.pin).emit("playerSubmittedAnswer");
     } catch (error) {
       console.log(error);
@@ -289,16 +301,7 @@ export class GameGateway {
       const question = room.questions.find(
         (q) => q.questionId == data.questionId
       );
-      for (let player in room.players) {
-        if (question.answers[player] == null) {
-          console.log("Player", player, "not found in question");
-          question.answers[player] = {
-            answer: 0,
-            time: 0,
-            score: room.questions[this.currentQuestion - 1].answers[player]?.score || 0
-          };
-        }
-      }
+      console.log(question);
       // Gửi thống kê số lượng người chơi chọn từng đáp án về cho host
       const answerStatistics = this.calculateAnswerStatistics(question);
       this.server.to(room.hostId).emit("answerStatistics", {
@@ -310,9 +313,12 @@ export class GameGateway {
         correctAnswer: question.correctAnswer
       });
       for (let player in room.players) {
-
-        this.server.to(player).emit("showScore",question.answers[player].score);
-        // question.answers[playerName].score;
+        if (question.answers[player] == null || question.answers[player] == undefined) {
+        this.rooms[data.pin].questions[this.currentQuestion].answers[player] = {answer: 0, time: 0, score: this.rooms[data.pin].questions[this.currentQuestion - 1].answers[player].score};
+        this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
+        }else{
+          this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
+        }// question.answers[playerName].score;
       }
     } else {
       console.log("Unauthorized: Only the host can show the result.");
