@@ -6,9 +6,9 @@ import {
   WebSocketServer
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
+import {Body} from "@nestjs/common";
 
 interface Room {
-
   hostId: string;
   isStarted: boolean;
   players: { [socketId: string]: string };
@@ -70,7 +70,7 @@ export class GameGateway {
         console.log(`${data.username} joined room ${data.pin}`);
         this.server
           .to(room.hostId)
-          .emit("guestJoined", {username: data.username});
+          .emit("guestJoined", {username: data.username, playerId: playerId});
         client.emit("clientGuessJoined","Guest joined room");
       }else {
         client.emit("error", "Game has already started");
@@ -79,14 +79,12 @@ export class GameGateway {
     } else {
       client.emit("error", "Room not found");
     }
-
   }
 
   @SubscribeMessage("checkRoomExist")
   handleCheckRoomExist(
     @MessageBody() pin: string,
     @ConnectedSocket() client: Socket
-
   ): void {
     const room = this.rooms[pin];
     if (!room) {
@@ -168,7 +166,6 @@ export class GameGateway {
       client.emit("error", "Only the host can send a question.");
     }
   }
-
 
   @SubscribeMessage("sendAnswer")
   handleSendAnswer(
@@ -313,13 +310,27 @@ export class GameGateway {
         correctAnswer: question.correctAnswer
       });
       for (let player in room.players) {
-        if (question.answers[player] == null || question.answers[player] == undefined) {
-        this.rooms[data.pin].questions[this.currentQuestion].answers[player] = {answer: 0, time: 0, score: this.rooms[data.pin].questions[this.currentQuestion - 1].answers[player].score};
-        this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
-        }else{
-          this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
-        }// question.answers[playerName].score;
+          if (question.answers[player] == null || question.answers[player] == undefined ) {
+            if(this.currentQuestion !== 0){
+              this.rooms[data.pin].questions[this.currentQuestion].answers[player] = {
+              answer: 0,
+              time: 0,
+              score: this.rooms[data.pin].questions[this.currentQuestion - 1].answers[player].score
+            };
+            }else{
+              this.rooms[data.pin].questions[this.currentQuestion].answers[player] = {
+                answer: 0,
+                time: 0,
+                score: 0
+              }
+            }
+            this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
+          } else {
+            this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
+          }// question.answers[playerName].score;
+
       }
+      console.log(`Results shown in room ${data.pin}`,this.rooms[data.pin]);
     } else {
       console.log("Unauthorized: Only the host can show the result.");
       client.emit("error", "Only the host can show the result.");
@@ -521,25 +532,33 @@ export class GameGateway {
           correctCount: correctCounts[playerName] || 0, // Tổng số câu đúng
           incorrectCount: incorrectCounts[playerName] || 0, // Tổng số câu sai
           noAnswerCount: noAnswerCounts[playerName] || 0, // Tổng số câu không trả lời
-          playerName
+          playerName: room.players[playerName]
         });
       }
     });
 
+    console.log('playerssssss',results)
+
     return results;
   }
 
-  // handleRanking(){
-  //
-  // }
+  @SubscribeMessage("kickPlayer")
+  handleKickPlayer(
+      @MessageBody() data: { pin: string, playerId: string },
+  ){
+    const room = this.rooms[data.pin];
+    console.log(room);
+    console.log(data.playerId)
+    for (const playerId in room.players) {
+      if (playerId == data.playerId) {
+        delete this.rooms[data.pin].players[playerId];
+        console.log(`${data.playerId} has been kicked by the host`);
+      }
+    }
+  }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
-
-    client.on('logout', () => {
-      console.log(`Client logged out: ${client.id}`);
-      this.handleDisconnect(client);
-    });
   }
 
   handleDisconnect(client: Socket) {
@@ -547,24 +566,17 @@ export class GameGateway {
     for (const pin in this.rooms) {
       const room = this.rooms[pin];
       if (room.hostId === client.id) {
-
         delete this.rooms[pin];
         this.server.to(pin).emit("error", "Host has left the game");
         this.server.in(pin).socketsLeave(pin); // Kick all players out of the room
         this.currentQuestion = 0;
-        delete this.rooms[pin];
         console.log(`Room ${pin} deleted because host disconnected`);
-
       } else if (room.players[client.id]) {
         const username = room.players[client.id];
         // delete room.players[client.id];
-        this.server.to(room.hostId).emit("guestLeft", { username });
-
+          this.server.to(room.hostId).emit("guestLeft", {username: username, playerId: client.id} );
         console.log(`${username} left room ${pin}`);
       }
-      client.join(pin);
-      console.log(`Room ${pin} created by host ${client.id}`);
-
     }
   }
 }
