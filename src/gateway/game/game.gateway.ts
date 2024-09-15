@@ -70,7 +70,7 @@ export class GameGateway {
         console.log(`${data.username} joined room ${data.pin}`);
         this.server
           .to(room.hostId)
-          .emit("guestJoined", {username: data.username});
+          .emit("guestJoined", {username: data.username, playerId: playerId});
         client.emit("clientGuessJoined","Guest joined room");
       }else {
         client.emit("error", "Game has already started");
@@ -323,7 +323,6 @@ export class GameGateway {
                 time: 0,
                 score: 0
               }
-
             }
             this.server.to(player).emit("showScore", this.rooms[data.pin].questions[this.currentQuestion].answers[player].score);
           } else {
@@ -331,6 +330,7 @@ export class GameGateway {
           }// question.answers[playerName].score;
 
       }
+      console.log(`Results shown in room ${data.pin}`,this.rooms[data.pin]);
     } else {
       console.log("Unauthorized: Only the host can show the result.");
       client.emit("error", "Only the host can show the result.");
@@ -532,25 +532,27 @@ export class GameGateway {
           correctCount: correctCounts[playerName] || 0, // Tổng số câu đúng
           incorrectCount: incorrectCounts[playerName] || 0, // Tổng số câu sai
           noAnswerCount: noAnswerCounts[playerName] || 0, // Tổng số câu không trả lời
-          playerName
+          playerName: room.players[playerName]
         });
       }
     });
+
+    console.log('playerssssss',results)
 
     return results;
   }
 
   @SubscribeMessage("kickPlayer")
   handleKickPlayer(
-      @MessageBody() data: { pin: string, playerName: string },
+      @MessageBody() data: { pin: string, playerId: string },
   ){
     const room = this.rooms[data.pin];
     console.log(room);
-    console.log(data.playerName)
+    console.log(data.playerId)
     for (const playerId in room.players) {
-      if (room.players[playerId] === data.playerName) {
+      if (playerId == data.playerId) {
         delete this.rooms[data.pin].players[playerId];
-        console.log(`${data.playerName} has been kicked by the host`);
+        console.log(`${data.playerId} has been kicked by the host`);
       }
     }
   }
@@ -572,7 +574,7 @@ export class GameGateway {
       } else if (room.players[client.id]) {
         const username = room.players[client.id];
         // delete room.players[client.id];
-          this.server.to(room.hostId).emit("guestLeft", username );
+          this.server.to(room.hostId).emit("guestLeft", {username: username, playerId: client.id} );
         console.log(`${username} left room ${pin}`);
       }
     }
