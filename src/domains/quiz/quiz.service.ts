@@ -28,7 +28,7 @@ export class QuizService {
       questions: [],
 
     });
-    // await this.searchService.indexQuiz(newQuiz);
+    await this.searchService.indexQuiz(newQuiz);
 
 
     const questions = quiz.quiz.questions.map(async question => {
@@ -96,7 +96,7 @@ export class QuizService {
       quiz.quiz.imgUrl = "https://firebasestorage.googleapis.com/v0/b/brainable-d5919.appspot.com/o/media.png?alt=media&token=b7bc0b71-587d-4dd3-932f-98ccb390bf6e";
     }
 
-    // await this.searchService.updateQuiz(quiz.quiz);
+    await this.searchService.updateQuiz(quiz.quiz);
     await AppDataSource.manager.update(Quiz, quiz.quiz.id, {
       title: quiz.quiz.title,
       description: quiz.quiz.description,
@@ -138,7 +138,7 @@ export class QuizService {
     if (!quiz) {
       throw new Error("Quiz not found");
     }
-    // await this.searchService.removeQuiz(quiz.id);
+    await this.searchService.removeQuiz(quiz.id);
     await AppDataSource.manager.remove(Quiz, quiz);
   }
 }

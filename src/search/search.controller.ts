@@ -13,9 +13,16 @@ export class SearchController {
     try {
       return this.searchService.searchQuiz(q);
     } catch (error) {
-      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
-
+  @Delete()
+  remove(@Param("id") id: string) {
+    try {
+      return this.searchService.deleteAll();
+    } catch (error) {
+      return new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
 }

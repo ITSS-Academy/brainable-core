@@ -66,5 +66,16 @@ export class SearchService {
     await this.indexQuiz(quiz);
   }
 
+  async deleteAll() {
+    await this.esClient.deleteByQuery({
+      index: "kadick_quiz",
+      body: {
+        query: {
+          match_all: {}
+        }
+      }
+    });
+  }
+
 
 }
