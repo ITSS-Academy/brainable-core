@@ -183,7 +183,7 @@ export class GameGateway {
 
       const room = this.rooms[data.pin];
       if (!room) {
-        client.emit("error", "Room not found");
+        // client.emit("error", "Room not exist");
         return;
       }
 
@@ -209,8 +209,10 @@ export class GameGateway {
         let newScore = 0;
         if (data.time <= 500) {
           newScore = 1000;
+          client.emit("sendScore", newScore);
         }else {
           newScore = Math.round(((1 - ((data.time / (room.questions[this.currentQuestion].timeLimit * 1000)) / 2)) * 1000) * room.questions[this.currentQuestion].points);
+            client.emit("sendScore", newScore);
         }
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = newScore;
@@ -226,6 +228,7 @@ export class GameGateway {
           }
         }
       } else {
+        client.emit("sendScore", 0);
         if (this.currentQuestion === 0) {
           question.answers[data.playerName].score = 0;
         } else {

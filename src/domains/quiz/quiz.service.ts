@@ -84,7 +84,7 @@ export class QuizService {
   }
 
   async update(quiz: UpdateQuizDto) {
-    console.log(quiz);
+    console.log(quiz.quiz.questions);
     let quizToUpdate = await AppDataSource.manager.findOne(Quiz, {
       where: { id: quiz.quiz.id }
     });
@@ -107,6 +107,9 @@ export class QuizService {
 
 
     const questions = quiz.quiz.questions.map(async question => {
+      if (question.id === "") {
+        delete question.id;
+      }
       // check if timeLimit is 0 or null and set it 10
       if (!question.imgUrl || question.imgUrl === "") {
         question.imgUrl = "https://firebasestorage.googleapis.com/v0/b/brainable-d5919.appspot.com/o/media.png?alt=media&token=b7bc0b71-587d-4dd3-932f-98ccb390bf6e";
